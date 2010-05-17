@@ -81,7 +81,7 @@ def p_configuration(p):
     """configuration : CONFIGURATION STRING STRING details
     """
 
-    p[0] = None # Configurations are ignored for now
+    p[0] = (p[3], (p[2], p[4]))
 
 def p_object(p):
     """object : OBJECT STRING STRING details

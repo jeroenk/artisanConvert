@@ -45,6 +45,22 @@ def GetVersion(data):
     else:
         return version
 
+def GetId(data):
+    for item in data:
+        if item[0] == "Attribute" \
+                and item[1] == "_Art1_Id":
+            return item[2][0]
+
+    raise OdlExtractException("No model identifier found")
+
+def GetModel(odl_data):
+    for ident in odl_data:
+        if odl_data[ident][0] == "_Art1_Model":
+            model_id = GetId(odl_data[ident][1])
+            return (model_id, ident)
+
+    raise OdlExtractException("No model name found")
+
 def GetName(data):
     version = GetVersion(data)
     return version[1][6:]
@@ -131,7 +147,7 @@ def GetAttributeIds(version, attrib_ids, ident):
     return attrib_ids
 
 def GetAttributes(odl_data, classes):
-    """Yields dictionary from class identifer to attribute names
+    """Yields dictionary from class identifer to attribute identifier name pairs
     """
 
     attrib_ids = {}
@@ -152,7 +168,7 @@ def GetAttributes(odl_data, classes):
         attributes[ident] = []
 
         for attrib_id in attrib_ids[ident]:
-            attributes[ident].append(names[attrib_id])
+            attributes[ident].append((attrib_id, names[attrib_id]))
 
     return attributes
 
