@@ -1,0 +1,8 @@
+*~
+*.pyc
+parsetab.py
+parser.out
+model/*
+ply/*
+pyth/*
+.DS_Store
