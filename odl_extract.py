@@ -19,6 +19,7 @@ class AssociationData:
         self.upper = [None, None]
         self.lower = [None, None]
         self.name  = [None, None]
+        self.role  = [None, None]
 
 class StateData:
     def __init__(self):
@@ -107,9 +108,6 @@ def GetSpecialInGeneral(version, special_gen, ident):
     return special_gen
 
 def GetSuperClasses(odl_data, classes):
-    """Yields a dictionary from class identifier to a list of identifiers
-    """
-
     general = {}
     special = {}
 
@@ -128,10 +126,11 @@ def GetSuperClasses(odl_data, classes):
     super_classes = {}
 
     for ident in special:
-        super_classes[ident] = []
+        super_classes[ident] = {}
 
         for special_ident in special[ident]:
-            super_classes[ident].append(general[special_gen[special_ident]])
+            super_classes[ident][special_ident] = \
+                general[special_gen[special_ident]]
 
     return super_classes
 
@@ -231,6 +230,7 @@ def GetAssociations(odl_data, classes):
 
         roles[ident] = (assoc, index)
         associations[assoc].name[index] = name
+        associations[assoc].role[index] = ident
 
     for ident in classes:
         version = GetVersion(odl_data[ident][1])
@@ -241,7 +241,7 @@ def GetAssociations(odl_data, classes):
                     and item[2] == "_Art1_Role":
                 associations[roles[item[3]][0]].owner[roles[item[3]][1]] = ident
 
-    return associations.values()
+    return associations
 
 def GetStates(odl_data):
     states = {}
