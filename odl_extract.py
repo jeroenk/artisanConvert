@@ -6,12 +6,14 @@ class OdlExtractException(Exception):
 
 class TransitionData:
     def __init__(self):
-        self.ident  = None
-        self.source = None
-        self.target = None
-        self.event  = None
-        self.action = None
-        self.guard  = None
+        self.ident    = None
+        self.internal = False
+        self.source   = None
+        self.target   = None
+        self.event    = None
+        self.event_id = None
+        self.action   = None
+        self.guard    = None
 
 class AssociationData:
     def __init__(self):
@@ -242,6 +244,17 @@ def GetAssociations(odl_data, classes):
 
     return associations
 
+def GetEvents(odl_data):
+    events = {}
+
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Event":
+            continue
+
+        events[ident] = GetName(odl_data[ident][1])
+
+    return events
+
 def GetStates(odl_data):
     states = {}
 
@@ -326,7 +339,8 @@ def FillTransitionDetails(odl_data, directory, transitions):
                     and item[1] == "_Art1_EventActionBlock_To_SignalEvent" \
                     and item[2] == "_Art1_Event" \
                     and etype == 0:
-                event = "signal/" + GetName(odl_data[item[3]][1])
+                event    = "signal/" + GetName(odl_data[item[3]][1])
+                event_id = item[3]
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_EventActionBlock_To_ChangeEvent" \
                     and item[2] == "_Art1_ChangeEvent":
@@ -350,12 +364,13 @@ def FillTransitionDetails(odl_data, directory, transitions):
         elif etype == None:
             event = "None"
 
-        if etype == 0 and trans_ident == ident:
+        if etype == 0 and transitions[trans_ident].internal:
             event = "signal_in/" + event[7:]
 
-        transitions[trans_ident].action = GetExternal(version, directory)
-        transitions[trans_ident].event  = event
-        transitions[trans_ident].guard  = guard
+        transitions[trans_ident].action   = GetExternal(version, directory)
+        transitions[trans_ident].event    = event
+        transitions[trans_ident].event_id = event_id
+        transitions[trans_ident].guard    = guard
 
     return transitions
 
@@ -390,9 +405,10 @@ def GetTransitions(odl_data, directory, states):
                     and item[1] == "_Art1_State_To_EventActionBlock" \
                     and item[2] == "_Art1_EventActionBlock":
                 data = TransitionData()
-                data.ident  = item[3]
-                data.source = ident
-                data.target = ident
+                data.ident    = item[3]
+                data.internal = True
+                data.source   = ident
+                data.target   = ident
                 transitions[item[3]] = data
 
     return FillTransitionDetails(odl_data, directory, transitions).values()

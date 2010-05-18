@@ -1,22 +1,16 @@
 from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
-    GetAssociations, GetStates, GetTransitions
+    GetAssociations, GetEvents, GetStates, GetTransitions
 from uuid        import uuid4
 
 directory = "model"
 signals   = {}
 
 def GatherSignals(odl_data):
-    states      = GetStates(odl_data)
-    transitions = GetTransitions(odl_data, directory, states)
+    events = GetEvents(odl_data)
 
-    for transition in transitions:
-        if transition.event[:7] == "signal/" and \
-                transition.event[7:] not in signals:
-            signals[transition.event[7:]] = str(uuid4())
-        elif transition.event[:10] == "signal_in/" and \
-                transition.event[:10] not in signals:
-            signals[transition.event[10:]] = str(uuid4())
+    for event in events:
+        signals[event] = (events[event], str(uuid4()))
 
 def PrintHeader(odl_data):
     (ident, name) = GetModel(odl_data)
@@ -92,20 +86,17 @@ def PrintOwnedReceptions(ident, odl_data):
         if states[transition.source].class_id != ident:
             continue
 
-        if transition.event[:7] == "signal/":
-            name = transition.event[7:]
-        elif transition.event[:10] == "signal_in/":
-            name = transition.event[10:]
-        else:
+        if transition.event[:7] != "signal/" \
+                and transition.event[:10] != "signal_in/":
             continue
 
-        if name in events:
+        if transition.event_id in events:
             continue
 
-        events.append(name)
-        print "    <ownedReception xmi:id=\"_" + str(uuid4()) + "\" " \
+        events.append(transition.event_id)
+        print "    <ownedReception xmi:id=\"_" + transition.event_id + "\" " \
             + "name=\"Reception_" + str(len(events) - 1) + "\" " \
-            + "signal=\"_" + signals[name] + "\"/>"
+            + "signal=\"_" + signals[transition.event_id][1] + "\"/>"
 
 def PrintClassFooter():
     print "  </packagedElement>"
@@ -169,8 +160,18 @@ def PrintAssociations(odl_data):
 def PrintSignals(odl_data):
     for signal in signals:
         print "  <packagedElement xmi:type=\"uml:Signal\" " \
-            + "xmi:id=\"_" + signals[signal] + "\" " \
-            + "name=\"" + signal + "\"/>"
+            + "xmi:id=\"_" + signals[signal][1] + "\" " \
+            + "name=\"" + signals[signal][0] + "\"/>"
+
+def PrintSignalEvents():
+    count = 0
+
+    for signal in signals:
+        print "  <packagedElement xmi:type=\"uml:SignalEvent\" " \
+            + "xmi_id=\"_" + signal + "\" " \
+            + "name=\"SignalEvent_" + str(count) + "\" " \
+            + "signal=\"_" + signals[signal][1] + "\"/>"
+        count += 1
 
 def PrintFooter():
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
@@ -188,6 +189,7 @@ def main():
     PrintClasses(odl_data)
     PrintAssociations(odl_data)
     PrintSignals(odl_data)
+    PrintSignalEvents()
     PrintFooter()
 
 main()
