@@ -29,7 +29,6 @@ class StateData:
         self.substates   = []
         self.is_parallel = False
         self.superstate  = None
-        self.state_class = None
 
 def GetVersion(data):
     version = None

@@ -1,7 +1,22 @@
 from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
-    GetAssociations
+    GetAssociations, GetStates, GetTransitions
 from uuid        import uuid4
+
+directory = "model"
+signals   = {}
+
+def GatherSignals(odl_data):
+    states      = GetStates(odl_data)
+    transitions = GetTransitions(odl_data, directory, states)
+
+    for transition in transitions:
+        if transition.event[:7] == "signal/" and \
+                transition.event[7:] not in signals:
+            signals[transition.event[7:]] = str(uuid4())
+        elif transition.event[:10] == "signal_in/" and \
+                transition.event[:10] not in signals:
+            signals[transition.event[10:]] = str(uuid4())
 
 def PrintHeader(odl_data):
     (ident, name) = GetModel(odl_data)
@@ -67,6 +82,31 @@ def PrintAttributeAssociations(ident, associations):
         if data.owner[1] == ident and data.name[0] != "":
             PrintAttributeAssociation(association_ident, data, 0)
 
+def PrintOwnedReceptions(ident, odl_data):
+    states      = GetStates(odl_data)
+    transitions = GetTransitions(odl_data, directory, states)
+
+    events = []
+
+    for transition in transitions:
+        if states[transition.source].class_id != ident:
+            continue
+
+        if transition.event[:7] == "signal/":
+            name = transition.event[7:]
+        elif transition.event[:10] == "signal_in/":
+            name = transition.event[10:]
+        else:
+            continue
+
+        if name in events:
+            continue
+
+        events.append(name)
+        print "    <ownedReception xmi:id=\"_" + str(uuid4()) + "\" " \
+            + "name=\"Reception_" + str(len(events) - 1) + "\" " \
+            + "signal=\"_" + signals[name] + "\"/>"
+
 def PrintClassFooter():
     print "  </packagedElement>"
 
@@ -81,6 +121,7 @@ def PrintClasses(odl_data):
         PrintSuperClasses(ident, super_classes)
         PrintAttributes(attributes[ident])
         PrintAttributeAssociations(ident, associations)
+        PrintOwnedReceptions(ident, odl_data)
         PrintClassFooter()
 
 def PrintOwnedEnds(data, ident, classes):
@@ -125,6 +166,12 @@ def PrintAssociations(odl_data):
         if data.name[0] == "" or data.name[1] == "":
             print "  </packagedElement>"
 
+def PrintSignals(odl_data):
+    for signal in signals:
+        print "  <packagedElement xmi:type=\"uml:Signal\" " \
+            + "xmi:id=\"_" + signals[signal] + "\" " \
+            + "name=\"" + signal + "\"/>"
+
 def PrintFooter():
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
         + "xmi:id=\"_brobQF6WEd-1BtN3LP_f7A\" name=\"DerivedAttribute\"/>"
@@ -133,12 +180,14 @@ def PrintFooter():
     print "</uml:Model>"
 
 def main():
-    directory = "model"
     odl_data = OdlParseFile(directory)
+
+    GatherSignals(odl_data)
 
     PrintHeader(odl_data)
     PrintClasses(odl_data)
     PrintAssociations(odl_data)
+    PrintSignals(odl_data)
     PrintFooter()
 
 main()
