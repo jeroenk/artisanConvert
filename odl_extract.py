@@ -7,7 +7,6 @@ class OdlExtractException(Exception):
 class TransitionData:
     def __init__(self):
         self.ident    = None
-        self.internal = False
         self.source   = None
         self.target   = None
         self.event    = None
@@ -364,7 +363,7 @@ def FillTransitionDetails(odl_data, directory, transitions):
         elif etype == None:
             event = "None"
 
-        if etype == 0 and transitions[trans_ident].internal:
+        if etype == 0 and trans_ident == ident:
             event = "signal_in/" + event[7:]
 
         transitions[trans_ident].action   = GetExternal(version, directory)
@@ -406,7 +405,6 @@ def GetTransitions(odl_data, directory, states):
                     and item[2] == "_Art1_EventActionBlock":
                 data = TransitionData()
                 data.ident    = item[3]
-                data.internal = True
                 data.source   = ident
                 data.target   = ident
                 transitions[item[3]] = data
