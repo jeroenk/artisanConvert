@@ -51,7 +51,7 @@ def PrintValues(upper, lower):
 def PrintAttributeAssociation(ident, data, index):
     print "    <ownedAttribute xmi:id=\"_" + data.role[index] +"\" " \
         + "name=\"" + data.name[index] +"\" " \
-        + "type=\"_" + str(uuid4()) + "\" " \
+        + "type=\"_" + data.owner[index] + "\" " \
         + "isUnique=\"false\" " \
         + "association=\"_" + ident + "\">"
     PrintValues(data.upper[index], data.lower[index])
@@ -87,7 +87,7 @@ def PrintOwnedEnds(data, ident, classes):
     if data.name[0] == "":
         print "    <ownedEnd xmi:id=\"_" + data.role[0] + "\" " \
             + "name=\"" + classes[data.owner[0]] + "\" " \
-            + "type=\"_" + str(uuid4()) + "\" " \
+            + "type=\"_" + data.owner[0] + "\" " \
             + "isUnique=\"false\" " \
             + "association=\"_" + ident + "\">"
         PrintValues(data.upper[0], data.lower[0])
@@ -96,7 +96,7 @@ def PrintOwnedEnds(data, ident, classes):
     if data.name[1] == "":
         print "    <ownedEnd xmi:id=\"_" + data.role[1] + "\" " \
             + "name=\"" + classes[data.owner[1]] + "\" " \
-            + "type=\"_" + str(uuid4()) + "\" " \
+            + "type=\"_" + data.owner[1] + "\" " \
             + "isUnique=\"false\" " \
             + "association=\"_" + ident + "\">"
         PrintValues(data.upper[1], data.lower[1])
