@@ -168,7 +168,7 @@ def PrintSignalEvents():
 
     for signal in signals:
         print "  <packagedElement xmi:type=\"uml:SignalEvent\" " \
-            + "xmi_id=\"_" + signal + "\" " \
+            + "xmi:id=\"_" + signal + "\" " \
             + "name=\"SignalEvent_" + str(count) + "\" " \
             + "signal=\"_" + signals[signal][1] + "\"/>"
         count += 1
