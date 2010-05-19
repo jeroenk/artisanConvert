@@ -106,15 +106,13 @@ def PrintOwnedReceptions(ident, odl_data):
             continue
 
         events.append(transition.event_id)
-        print "    <ownedReception xmi:id=\"_" + transition.event_id + "\" " \
+        print "    <ownedReception xmi:id=\"_" + str(uuid4()) + "\" " \
             + "name=\"Reception_" + str(len(events) - 1) + "\" " \
             + "signal=\"_" + signals[transition.event_id][1] + "\"/>"
 
 def PrintTransition(transition, states, indent, count):
-    if transition.event[:7] != "signal/" \
-            and transition.event[:5] != "Time/" \
-            and transition.event[:7] != "Change/" \
-            and transition.event != "None":
+    if transition.event == "Entry/" \
+            or transition.event == "Exit/":
         return
 
     string = indent \
@@ -135,6 +133,9 @@ def PrintTransition(transition, states, indent, count):
     if transition.guard != "":
         string += " guard=\"_" + transition.guard_id + "\""
 
+    if transition.event[:10] == "signal_in/":
+        string += " kind=\"internal\""
+
     string += ">"
     print string
 
@@ -152,7 +153,7 @@ def PrintTransition(transition, states, indent, count):
 
     if transition.guard != "":
         print indent \
-            + "          <ownedRule xmi:id\"_" + transition.guard_id + "\" " \
+            + "          <ownedRule xmi:id=\"_" + transition.guard_id + "\" " \
             + "name=\"Guard\">"
         print indent \
             + "            <specification xmi:type=\"uml:LiteralString\" " \
