@@ -413,11 +413,3 @@ def GetTransitions(odl_data, directory, states):
                 transitions[item[3]] = data
 
     return FillTransitionDetails(odl_data, directory, transitions).values()
-
-def OdlExtractMachines(odl_data, directory):
-    classes       = GetClasses(odl_data)
-    super_classes = GetSuperClasses(odl_data, classes)
-    attributes    = GetAttributes(odl_data, classes)
-    associations  = GetAssociations(odl_data, classes)
-    states        = GetStates(odl_data)
-    transitions   = GetTransitions(odl_data, directory, states)
