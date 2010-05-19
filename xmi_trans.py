@@ -15,6 +15,17 @@ def GatherSignals(odl_data):
     for event in events:
         signals[event] = (events[event], str(uuid4()))
 
+def GatherTimesAndChanges(odl_data):
+    states      = GetStates(odl_data)
+    transitions = GetTransitions(odl_data, directory, states)
+
+    for transition in transitions:
+        if transition.event[:7] == "Change/":
+            changes[transition.ident] = str(uuid4())
+
+        if transition.event[:5] == "Time/":
+            times[transition.ident] = str(uuid4())
+
 def PrintHeader(odl_data):
     (ident, name) = GetModel(odl_data)
 
@@ -101,6 +112,8 @@ def PrintOwnedReceptions(ident, odl_data):
 
 def PrintTransition(transition, states, indent, count):
     if transition.event[:7] != "signal/" \
+            and transition.event[:5] != "Time/" \
+            and transition.event[:7] != "Change/" \
             and transition.event != "None":
         return
 
@@ -124,6 +137,12 @@ def PrintTransition(transition, states, indent, count):
 
     string += ">"
     print string
+
+    if transition.event[:5] == "Time/":
+        transition.event_id = times[transition.ident]
+
+    if transition.event[:7] == "Change/":
+        transition.event_id = changes[transition.ident]
 
     if transition.event_id != None:
         print indent \
@@ -357,15 +376,15 @@ def PrintTimeEvents(odl_data):
     states      = GetStates(odl_data)
     transitions = GetTransitions(odl_data, directory, states)
 
+    count = 0
+
     for transition in transitions:
         if transition.event[:5] != "Time/":
             continue
 
-        times[transition.ident] = str(uuid4())
-
         print "  <packagedElement xmi:type=\"uml:TimeEvent\" " \
             + "xmi:id=\"_" + times[transition.ident] + "\" " \
-            + "name=\"TimeEvent_" + str(len(times) - 1) + "\">"
+            + "name=\"TimeEvent_" + str(count) + "\">"
 
         print "    <when xmi:type=\"uml:LiteralString\" " \
             + "xmi:id=\"_" + str(uuid4()) + "\" " \
@@ -373,25 +392,29 @@ def PrintTimeEvents(odl_data):
 
         print "  </packagedElement>"
 
+        count += 1
+
 def PrintChangeEvents(odl_data):
     states      = GetStates(odl_data)
     transitions = GetTransitions(odl_data, directory, states)
+
+    count = 1
 
     for transition in transitions:
         if transition.event[:7] != "Change/":
             continue
 
-        changes[transition.ident] = str(uuid4())
-
         print "  <packagedElement xmi:type=\"uml:ChangeEvent\" " \
             + "xmi:id=\"_" + changes[transition.ident] + "\" " \
-            + "name=\"ChangeEvent_" + str(len(changes) - 1) + "\">"
+            + "name=\"ChangeEvent_" + str(count) + "\">"
 
         print "    <changeExpression xmi:type=\"uml:LiteralString\" " \
             + "xmi:id=\"_" + str(uuid4()) + "\" " \
             + "value=\"" + escape(transition.event[7:], True) + "\"/>"
 
         print "  </packagedElement>"
+
+        count += 1
 
 def PrintFooter():
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
@@ -404,6 +427,7 @@ def main():
     odl_data = OdlParseFile(directory)
 
     GatherSignals(odl_data)
+    GatherTimesAndChanges(odl_data)
 
     PrintHeader(odl_data)
     PrintClasses(odl_data)
