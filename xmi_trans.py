@@ -2,9 +2,12 @@ from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
     GetAssociations, GetEvents, GetStates, GetTransitions
 from uuid        import uuid4
+from cgi         import escape
 
 directory = "model"
 signals   = {}
+times     = {}
+changes   = {}
 
 def GatherSignals(odl_data):
     events = GetEvents(odl_data)
@@ -161,7 +164,7 @@ def PrintSignals(odl_data):
     for signal in signals:
         print "  <packagedElement xmi:type=\"uml:Signal\" " \
             + "xmi:id=\"_" + signals[signal][1] + "\" " \
-            + "name=\"" + signals[signal][0] + "\"/>"
+            + "name=\"" + escape(signals[signal][0], True) + "\"/>"
 
 def PrintSignalEvents():
     count = 0
@@ -172,6 +175,46 @@ def PrintSignalEvents():
             + "name=\"SignalEvent_" + str(count) + "\" " \
             + "signal=\"_" + signals[signal][1] + "\"/>"
         count += 1
+
+def PrintTimeEvents(odl_data):
+    states      = GetStates(odl_data)
+    transitions = GetTransitions(odl_data, directory, states)
+
+    for transition in transitions:
+        if transition.event[:5] != "Time/":
+            continue
+
+        times[transition.ident] = str(uuid4())
+
+        print "  <packagedElement xmi:type=\"uml:TimeEvent\" " \
+            + "xmi:id=\"_" + times[transition.ident] + "\" " \
+            + "name=\"TimeEvent_" + str(len(times) - 1) + "\">"
+
+        print "    <when xmi:type=\"uml:LiteralString\" " \
+            + "xmi:id=\"_" + str(uuid4()) + "\" " \
+            + "value=\"after( " + transition.event[5:] + " )\"/>"
+
+        print "  </packagedElement>"
+
+def PrintChangeEvents(odl_data):
+    states      = GetStates(odl_data)
+    transitions = GetTransitions(odl_data, directory, states)
+
+    for transition in transitions:
+        if transition.event[:7] != "Change/":
+            continue
+
+        changes[transition.ident] = str(uuid4())
+
+        print "  <packagedElement xmi:type=\"uml:ChangeEvent\" " \
+            + "xmi:id=\"_" + changes[transition.ident] + "\" " \
+            + "name=\"ChangeEvent_" + str(len(changes) - 1) + "\">"
+
+        print "    <changeExpression xmi:type=\"uml:LiteralString\" " \
+            + "xmi:id=\"_" + str(uuid4()) + "\" " \
+            + "value=\"" + escape(transition.event[7:], True) + "\"/>"
+
+        print "  </packagedElement>"
 
 def PrintFooter():
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
@@ -190,6 +233,8 @@ def main():
     PrintAssociations(odl_data)
     PrintSignals(odl_data)
     PrintSignalEvents()
+    PrintTimeEvents(odl_data)
+    PrintChangeEvents(odl_data)
     PrintFooter()
 
 main()
