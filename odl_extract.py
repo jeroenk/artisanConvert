@@ -13,6 +13,7 @@ class TransitionData:
         self.event_id = None
         self.action   = None
         self.guard    = None
+        self.guard_id = None
 
 class AssociationData:
     def __init__(self):
@@ -354,7 +355,8 @@ def FillTransitionDetails(odl_data, directory, transitions):
                     and item[1] == "_Art1_EventActionBlock_To_GuardCondition" \
                     and item[2] == "_Art1_GuardCondition":
                 guard_version = GetVersion(odl_data[item[3]][1])
-                guard = GetExternal(guard_version, directory)
+                guard    = GetExternal(guard_version, directory)
+                guard_id = item[3]
 
         if etype == 4:
             event = "Entry/"
@@ -370,6 +372,7 @@ def FillTransitionDetails(odl_data, directory, transitions):
         transitions[trans_ident].event    = event
         transitions[trans_ident].event_id = event_id
         transitions[trans_ident].guard    = guard
+        transitions[trans_ident].guard_id = guard_id
 
     return transitions
 

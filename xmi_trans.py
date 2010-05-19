@@ -99,6 +99,63 @@ def PrintOwnedReceptions(ident, odl_data):
             + "name=\"Reception_" + str(len(events) - 1) + "\" " \
             + "signal=\"_" + signals[transition.event_id][1] + "\"/>"
 
+def PrintTransition(transition, states, indent, count):
+    if transition.event[:7] != "signal/" \
+            and transition.event != "None":
+        return
+
+    string = indent \
+        + "        <transition xmi:id=\"_" + transition.ident + "\" " \
+        + "name=\"From_" + states[transition.source].name + "_to_" \
+            + states[transition.target].name + "_Transition_" \
+            + str(count) + "\" " \
+        + "target=\"_" + transition.target + "\" " \
+        + "source=\"_" + transition.source + "\""
+
+    if transition.event == "None" \
+            and transition.guard == "" \
+            and transition.action == "":
+        string += "/>"
+        print string
+        return
+
+    if transition.guard != "":
+        string += " guard=\"_" + transition.guard_id + "\""
+
+    string += ">"
+    print string
+
+    if transition.event_id != None:
+        print indent \
+            + "          <trigger xmi:id=\"_" + str(uuid4()) + "\" " \
+            + "name=\"Trigger_0\" " \
+            + "event=\"_" + transition.event_id + "\"/>"
+
+    if transition.guard != "":
+        print indent \
+            + "          <ownedRule xmi:id\"_" + transition.guard_id + "\" " \
+            + "name=\"Guard\">"
+        print indent \
+            + "            <specification xmi:type=\"uml:LiteralString\" " \
+            + "xmi:id=\"_" + str(uuid4()) + "\" " \
+            + "value=\"" + escape(transition.guard, True) + "\"/>"
+        print indent + "          </ownedRule>"
+
+    if transition.action != "":
+        print indent \
+            + "          <effect xmi:type=\"uml:OpaqueBehavior\" " \
+            + "xmi:id=\"_" + str(uuid4()) + "\" " \
+            + "name=\"Effect\">"
+        print indent + "            <language>xuml</language>"
+        print indent \
+            + "            <body>" \
+            + escape(transition.action, True) \
+            + "</body>"
+        print indent \
+            + "          </effect>"
+
+    print indent + "        </transition>"
+
 def PrintRegion(ident, states, transitions, indent):
     print indent \
         + "        <region xmi:id=\"_" + str(uuid4()) + "\" " \
@@ -106,6 +163,13 @@ def PrintRegion(ident, states, transitions, indent):
 
     for state_ident in states[ident].substates:
         PrintState(state_ident, states, transitions, indent + "  ")
+
+    count = 0
+
+    for transition in transitions:
+        if transition.source in states[ident].substates:
+            PrintTransition(transition, states, indent + "  ", count)
+            count += 1
 
     print indent + "        </region>"
 
@@ -202,6 +266,13 @@ def PrintStateMachines(ident, class_name, odl_data):
 
     for state_ident in outer_states:
         PrintState(state_ident, states, transitions, "")
+
+    count = 0
+
+    for transition in transitions:
+        if transition.source in outer_states:
+            PrintTransition(transition, states, "", count)
+            count += 1
 
     print "      </region>"
     print "    </ownedBehavior>"
