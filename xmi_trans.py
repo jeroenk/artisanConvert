@@ -37,13 +37,11 @@ def PrintAttributes(attributes):
     for attribute in attributes:
         if attribute[1][0] == "/":
             type = "_brobQF6WEd-1BtN3LP_f7A"
-            name = attribute[1][1:]
         else:
             type = "_cD-CwF6WEd-1BtN3LP_f7A"
-            name = attribute[1]
 
         print "    <ownedAttribute xmi:id=\"_" + attribute[0] + "\" " \
-            + "name=\"" + name + "\" " \
+            + "name=\"" + attribute[1] + "\" " \
             + "type=\"" + type + "\" " \
             + "isUnique=\"false\"/>"
 
@@ -101,6 +99,113 @@ def PrintOwnedReceptions(ident, odl_data):
             + "name=\"Reception_" + str(len(events) - 1) + "\" " \
             + "signal=\"_" + signals[transition.event_id][1] + "\"/>"
 
+def PrintRegion(ident, states, transitions, indent):
+    print indent \
+        + "        <region xmi:id=\"_" + str(uuid4()) + "\" " \
+        + "name=\"" + states[ident].name + "\">"
+
+    for state_ident in states[ident].substates:
+        PrintState(state_ident, states, transitions, indent + "  ")
+
+    print indent + "        </region>"
+
+def PrintSubregions(ident, states, transitions, indent):
+    for state_ident in states[ident].substates:
+        PrintRegion(state_ident, states, transitions, indent)
+
+def PrintEntryExit(entry_exit, indent):
+    if entry_exit == []:
+        return
+
+    for transition in entry_exit:
+        if transition.event[:6] == "Entry/":
+            print indent \
+                + "          <entry xmi:type=\"uml:OpaqueBehavior\" " \
+                + "xmi:id=\"_" + transition.ident + "\" " \
+                + "name=\"Entry\">"
+        elif transition.event[:5] == "Exit/":
+            print indent \
+                + "          <exit xmi:type=\"uml:OpaqueBehavior\" " \
+                + "xmi:id=\"_" + transition.ident + "\" " \
+                + "name=\"Exit\">"
+
+        print indent + "            <language>xuml</language>"
+        print indent + "            <body>" \
+            + escape(transition.action, True) + "</body>"
+
+        if transition.event[:6] == "Entry/":
+            print indent + "          </entry>"
+        elif transition.event[:5] == "Exit/":
+            print indent + "          </exit>"
+
+def PrintState(ident, states, transitions, indent):
+    entry_exit = []
+
+    for transition in transitions:
+        if transition.source != ident:
+            continue
+
+        if transition.event[:6] != "Entry/" \
+                and transition.event[:5] != "Exit/":
+            continue
+
+        entry_exit.append(transition)
+
+    string = indent \
+        + "        <subvertex xmi:type=\"" + states[ident].vtype + "\" " \
+        + "xmi:id=\"_" + ident + "\" " \
+        + "name=\"" + states[ident].name + "\""
+
+    if states[ident].substates == [] and entry_exit == []:
+        string += "/>"
+        print string
+    elif states[ident].substates == [] and entry_exit != []:
+        string += ">"
+        print string
+
+        PrintEntryExit(entry_exit, indent)
+
+        print indent + "        </subvertex>"
+    else:
+        string += ">"
+        print string
+
+        if states[ident].is_parallel:
+            PrintSubregions(ident, states, transitions, indent + "  ")
+        else:
+            PrintRegion(ident, states, transitions, indent + "  ")
+
+        PrintEntryExit(entry_exit, indent)
+
+        print indent + "        </subvertex>"
+
+def PrintStateMachines(ident, class_name, odl_data):
+    states      = GetStates(odl_data)
+    transitions = GetTransitions(odl_data, directory, states)
+
+    outer_states = []
+
+    for state_ident in states:
+        state = states[state_ident]
+
+        if state.class_id == ident and state.superstate == None:
+            outer_states.append(state_ident)
+
+    if outer_states == []:
+        return
+
+    print "    <ownedBehavior xmi:type=\"uml:StateMachine\" " \
+        + "xmi:id=\"_" + str(uuid4()) + "\" " \
+        + "name=\"" + class_name + "\">"
+    print "      <region xmi:id=\"_" + str(uuid4()) + "\" " \
+        + "name=\"" + class_name + "\">"
+
+    for state_ident in outer_states:
+        PrintState(state_ident, states, transitions, "")
+
+    print "      </region>"
+    print "    </ownedBehavior>"
+
 def PrintClassFooter():
     print "  </packagedElement>"
 
@@ -116,6 +221,7 @@ def PrintClasses(odl_data):
         PrintAttributes(attributes[ident])
         PrintAttributeAssociations(ident, associations)
         PrintOwnedReceptions(ident, odl_data)
+        PrintStateMachines(ident, classes[ident], odl_data)
         PrintClassFooter()
 
 def PrintOwnedEnds(data, ident, classes):
