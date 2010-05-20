@@ -4,7 +4,8 @@ from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
 from uuid        import uuid4
 from cgi         import escape
 
-directory = "model"
+#directory = "model"
+directory = "big_model"
 signals   = {}
 times     = {}
 changes   = {}
@@ -138,7 +139,8 @@ def PrintOwnedReceptions(ident, odl_data):
 
 def PrintTransition(transition, states, indent, count):
     if transition.event == "Entry/" \
-            or transition.event == "Exit/":
+            or transition.event == "Exit/" \
+            or transition.event == "Dead":
         return
 
     string = indent \

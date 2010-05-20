@@ -29,8 +29,11 @@ def t_ID(t):
     return t
 
 def t_STRING(t):
-    r'\"[^\"]*\"'
+    r'\"([^\"\\]|\\[\"\\])*\"'
     t.value = t.value[1:len(t.value) - 1]
+    t.value = t.value.replace("\\\\", "\\")
+    t.value = t.value.replace("\\\"", "\"")
+    t.value = t.value.replace("\x0c", "")
     return t
 
 t_ignore_COMMENT = r'//.*'

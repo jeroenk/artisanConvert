@@ -1,5 +1,6 @@
 from pyth.plugins.rtf15.reader     import Rtf15Reader
 from pyth.plugins.plaintext.writer import PlaintextWriter
+from StringIO                      import StringIO
 
 class OdlExtractException(Exception):
     pass
@@ -181,6 +182,9 @@ def ParseMultiplicity(index, multiplicity, association):
     elif multiplicity == "0..1":
         association.upper[index] = "1"
         association.lower[index] = "0"
+    elif  multiplicity == "1..*":
+        association.upper[index] = "*"
+        association.lower[index] = "1"
     else:
         raise OdlExtractException("Unknown multiplicity " + multiplicity \
                                       + " found in association")
@@ -324,7 +328,16 @@ def GetExternal(version, directory):
         if item[0] == "Attribute" \
                 and item[1] == "_Art1_RTF":
 
-            doc = Rtf15Reader.read(open(directory + "/" + item[2][0]))
+            if len(item[2]) == 2:
+                f = open(directory + "/" + item[2][0])
+            elif len(item[2]) == 1:
+                if item[2][0] == "":
+                    return ""
+
+                f = StringIO()
+                f.write(item[2][0])
+
+            doc = Rtf15Reader.read(f)
             external = PlaintextWriter.write(doc).getvalue()
             external = external.replace("\n\n", "\n")
 
@@ -347,6 +360,7 @@ def FillTransitionDetails(odl_data, directory, transitions):
         version     = GetVersion(odl_data[ident][1])
         etype       = GetType(version)
         event       = None
+        event_id    = None
 
         for item in version[2]:
             if item[0] == "Relationship" \
@@ -382,6 +396,8 @@ def FillTransitionDetails(odl_data, directory, transitions):
             event = "Exit/"
         elif etype == None:
             event = "None"
+        elif etype == 8:
+            event = "Dead"
 
         if etype == 0 and trans_ident == ident:
             event = "signal_in/" + event[7:]
