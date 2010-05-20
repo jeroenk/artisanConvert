@@ -39,11 +39,13 @@ def PrintHeader(odl_data):
     print "<uml:Model xmi:version=\"2.1\" " \
         + "xmlns:xmi=\"http://schema.omg.org/spec/XMI/2.1\" " \
         + "xmlns:uml=\"http://www.eclipse.org/uml2/2.1.0/UML\" " \
-        + "xmi:id=\"_" + ident + "\" name=\"" + name + "\">"
+        + "xmi:id=\"_" + ident + "\" name=\"" + escape(name, True) + "\">"
 
 def PrintClassHeader(ident, name):
     print "  <packagedElement xmi:type=\"uml:Class\" " \
-        + "xmi:id=\"_" + ident + "\" name=\"" + name + "\" isActive=\"true\">"
+        + "xmi:id=\"_" + ident + "\" " \
+        + "name=\"" + escape(name, True) + "\" " \
+        + "isActive=\"true\">"
 
 def PrintSuperClasses(ident, super_classes):
     for general_ident in super_classes[ident]:
@@ -77,7 +79,7 @@ def PrintValues(upper, lower):
 
 def PrintAttributeAssociation(ident, data, index):
     print "    <ownedAttribute xmi:id=\"_" + data.role[index] +"\" " \
-        + "name=\"" + data.name[index] +"\" " \
+        + "name=\"" + escape(data.name[index], True) +"\" " \
         + "type=\"_" + data.owner[index] + "\" " \
         + "isUnique=\"false\" " \
         + "association=\"_" + ident + "\">"
@@ -145,8 +147,9 @@ def PrintTransition(transition, indent, count):
 
     string = indent \
         + "        <transition xmi:id=\"_" + transition.ident + "\" " \
-        + "name=\"From_" + states[transition.source].name + "_to_" \
-            + states[transition.target].name + "_Transition_" \
+        + "name=\"From_" + escape(states[transition.source].name, True) \
+            + "_to_" \
+            + escape(states[transition.target].name, True) + "_Transition_" \
             + str(count) + "\" " \
         + "target=\"_" + transition.target + "\" " \
         + "source=\"_" + transition.source + "\""
@@ -207,7 +210,7 @@ def PrintTransition(transition, indent, count):
 def PrintRegion(ident, indent):
     print indent \
         + "        <region xmi:id=\"_" + str(uuid4()) + "\" " \
-        + "name=\"" + states[ident].name + "\">"
+        + "name=\"" + escape(states[ident].name, True) + "\">"
 
     for state_ident in states[ident].substates:
         PrintState(state_ident, indent + "  ")
@@ -266,7 +269,7 @@ def PrintState(ident, indent):
     string = indent \
         + "        <subvertex xmi:type=\"" + states[ident].vtype + "\" " \
         + "xmi:id=\"_" + ident + "\" " \
-        + "name=\"" + states[ident].name + "\""
+        + "name=\"" + escape(states[ident].name, True) + "\""
 
     if states[ident].substates == [] and entry_exit == []:
         string += "/>"
@@ -305,9 +308,9 @@ def PrintStateMachines(ident, class_name, odl_data):
 
     print "    <ownedBehavior xmi:type=\"uml:StateMachine\" " \
         + "xmi:id=\"_" + str(uuid4()) + "\" " \
-        + "name=\"" + class_name + "\">"
+        + "name=\"" + escape(class_name, True) + "\">"
     print "      <region xmi:id=\"_" + str(uuid4()) + "\" " \
-        + "name=\"" + class_name + "\">"
+        + "name=\"" + escape(class_name, True) + "\">"
 
     for state_ident in outer_states:
         PrintState(state_ident, "")
@@ -338,7 +341,7 @@ def PrintClasses(odl_data):
 def PrintOwnedEnds(data, ident, classes):
     if data.name[0] == "":
         print "    <ownedEnd xmi:id=\"_" + data.role[0] + "\" " \
-            + "name=\"" + classes[data.owner[0]] + "\" " \
+            + "name=\"" + escape(classes[data.owner[0]], True) + "\" " \
             + "type=\"_" + data.owner[0] + "\" " \
             + "isUnique=\"false\" " \
             + "association=\"_" + ident + "\">"
@@ -347,7 +350,7 @@ def PrintOwnedEnds(data, ident, classes):
 
     if data.name[1] == "":
         print "    <ownedEnd xmi:id=\"_" + data.role[1] + "\" " \
-            + "name=\"" + classes[data.owner[1]] + "\" " \
+            + "name=\"" + escape(classes[data.owner[1]], True) + "\" " \
             + "type=\"_" + data.owner[1] + "\" " \
             + "isUnique=\"false\" " \
             + "association=\"_" + ident + "\">"
@@ -360,8 +363,8 @@ def PrintAssociations(odl_data):
 
         string = "  <packagedElement xmi:type=\"uml:Association\" " \
             + "xmi:id=\"_" + ident + "\" " \
-            + "name=\"A_" + classes[data.owner[0]] + "_" \
-                    + classes[data.owner[1]] + "\" " \
+            + "name=\"A_" + escape(classes[data.owner[0]], True) + "_" \
+                    + escape(classes[data.owner[1]], True) + "\" " \
             + "memberEnd=\"_" + data.role[1] + " _" + data.role[0] + "\""
 
         if data.name[0] != "" and data.name[1] != "":
