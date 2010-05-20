@@ -6,9 +6,17 @@ from cgi         import escape
 
 #directory = "model"
 directory = "big_model"
-signals   = {}
-times     = {}
-changes   = {}
+
+classes      = None
+associations = None
+parameters   = None
+states       = None
+transitions  = None
+
+
+signals = {}
+times   = {}
+changes = {}
 
 def GatherSignals(odl_data):
     events = GetEvents(odl_data)
@@ -17,9 +25,6 @@ def GatherSignals(odl_data):
         signals[event] = (events[event], str(uuid4()))
 
 def GatherTimesAndChanges(odl_data):
-    states      = GetStates(odl_data)
-    transitions = GetTransitions(odl_data, directory, states)
-
     for transition in transitions:
         if transition.event[:7] == "Change/":
             changes[transition.ident] = str(uuid4())
@@ -105,10 +110,6 @@ def PrintParameters(parameters):
         print "      </ownedParameter>"
 
 def PrintOwnedReceptions(ident, odl_data):
-    states      = GetStates(odl_data)
-    transitions = GetTransitions(odl_data, directory, states)
-    parameters  = GetParameters(odl_data)
-
     events = []
 
     for transition in transitions:
@@ -292,9 +293,6 @@ def PrintState(ident, states, transitions, indent):
         print indent + "        </subvertex>"
 
 def PrintStateMachines(ident, class_name, odl_data):
-    states      = GetStates(odl_data)
-    transitions = GetTransitions(odl_data, directory, states)
-
     outer_states = []
 
     for state_ident in states:
@@ -329,11 +327,6 @@ def PrintClassFooter():
     print "  </packagedElement>"
 
 def PrintClasses(odl_data):
-    classes       = GetClasses(odl_data)
-    super_classes = GetSuperClasses(odl_data, classes)
-    attributes    = GetAttributes(odl_data, classes)
-    associations  = GetAssociations(odl_data, classes)
-
     for ident in classes:
         PrintClassHeader(ident, classes[ident])
         PrintSuperClasses(ident, super_classes)
@@ -363,9 +356,6 @@ def PrintOwnedEnds(data, ident, classes):
         print "    </ownedEnd>"
 
 def PrintAssociations(odl_data):
-    classes      = GetClasses(odl_data)
-    associations = GetAssociations(odl_data, classes)
-
     for ident in associations:
         data = associations[ident]
 
@@ -402,9 +392,6 @@ def PrintSignalEvents():
         count += 1
 
 def PrintTimeEvents(odl_data):
-    states      = GetStates(odl_data)
-    transitions = GetTransitions(odl_data, directory, states)
-
     count = 0
 
     for transition in transitions:
@@ -424,9 +411,6 @@ def PrintTimeEvents(odl_data):
         count += 1
 
 def PrintChangeEvents(odl_data):
-    states      = GetStates(odl_data)
-    transitions = GetTransitions(odl_data, directory, states)
-
     count = 1
 
     for transition in transitions:
@@ -453,7 +437,18 @@ def PrintFooter():
     print "</uml:Model>"
 
 def main():
+    global classes, super_classes, attributes, associations, parameters, \
+        states, transitions
+
     odl_data = OdlParseFile(directory)
+
+    classes       = GetClasses(odl_data)
+    super_classes = GetSuperClasses(odl_data, classes)
+    attributes    = GetAttributes(odl_data, classes)
+    associations  = GetAssociations(odl_data, classes)
+    parameters    = GetParameters(odl_data)
+    states        = GetStates(odl_data)
+    transitions   = GetTransitions(odl_data, directory, states)
 
     GatherSignals(odl_data)
     GatherTimesAndChanges(odl_data)
