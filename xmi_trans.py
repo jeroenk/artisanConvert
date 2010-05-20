@@ -137,8 +137,7 @@ def PrintOwnedReceptions(ident, odl_data):
             PrintParameters(parameters[transition.event_id])
             print "    </ownedReception>"
 
-
-def PrintTransition(transition, states, indent, count):
+def PrintTransition(transition, indent, count):
     if transition.event == "Entry/" \
             or transition.event == "Exit/" \
             or transition.event == "Dead":
@@ -205,26 +204,26 @@ def PrintTransition(transition, states, indent, count):
 
     print indent + "        </transition>"
 
-def PrintRegion(ident, states, transitions, indent):
+def PrintRegion(ident, indent):
     print indent \
         + "        <region xmi:id=\"_" + str(uuid4()) + "\" " \
         + "name=\"" + states[ident].name + "\">"
 
     for state_ident in states[ident].substates:
-        PrintState(state_ident, states, transitions, indent + "  ")
+        PrintState(state_ident, indent + "  ")
 
     count = 0
 
     for transition in transitions:
         if transition.source in states[ident].substates:
-            PrintTransition(transition, states, indent + "  ", count)
+            PrintTransition(transition, indent + "  ", count)
             count += 1
 
     print indent + "        </region>"
 
-def PrintSubregions(ident, states, transitions, indent):
+def PrintSubregions(ident, indent):
     for state_ident in states[ident].substates:
-        PrintRegion(state_ident, states, transitions, indent)
+        PrintRegion(state_ident, indent)
 
 def PrintEntryExit(entry_exit, indent):
     if entry_exit == []:
@@ -251,7 +250,7 @@ def PrintEntryExit(entry_exit, indent):
         elif transition.event[:5] == "Exit/":
             print indent + "          </exit>"
 
-def PrintState(ident, states, transitions, indent):
+def PrintState(ident, indent):
     entry_exit = []
 
     for transition in transitions:
@@ -284,9 +283,9 @@ def PrintState(ident, states, transitions, indent):
         print string
 
         if states[ident].is_parallel:
-            PrintSubregions(ident, states, transitions, indent + "  ")
+            PrintSubregions(ident, indent + "  ")
         else:
-            PrintRegion(ident, states, transitions, indent + "  ")
+            PrintRegion(ident, indent + "  ")
 
         PrintEntryExit(entry_exit, indent)
 
@@ -311,13 +310,13 @@ def PrintStateMachines(ident, class_name, odl_data):
         + "name=\"" + class_name + "\">"
 
     for state_ident in outer_states:
-        PrintState(state_ident, states, transitions, "")
+        PrintState(state_ident, "")
 
     count = 0
 
     for transition in transitions:
         if transition.source in outer_states:
-            PrintTransition(transition, states, "", count)
+            PrintTransition(transition, "", count)
             count += 1
 
     print "      </region>"
