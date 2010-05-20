@@ -1,6 +1,6 @@
 from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
-    GetAssociations, GetEvents, GetStates, GetTransitions
+    GetAssociations, GetEvents, GetParameters, GetStates, GetTransitions
 from uuid        import uuid4
 from cgi         import escape
 
@@ -88,9 +88,25 @@ def PrintAttributeAssociations(ident, associations):
         if data.owner[1] == ident and data.name[0] != "":
             PrintAttributeAssociation(association_ident, data, 0)
 
+def PrintParameters(parameters):
+    for parameter in parameters:
+        print "      <ownedParameter xmi:id=\"_" + str(uuid4()) + "\" " \
+            + "name=\"" + escape(parameter, True) + "\" " \
+            + "type=\"_cD-CwF6WEd-1BtN3LP_f7A\">"
+        print "        <upperValue xmi:type=\"uml:LiteralUnlimitedNatural\" " \
+            + "xmi:id=\"_" + str(uuid4()) + "\"/>"
+        print "        <lowerValue xmi:type=\"uml:LiteralInteger\" " \
+            + "xmi:id=\"_" + str(uuid4()) + "\"/>"
+        print "        <defaultValue xmi:type=\"uml:LiteralString\" " \
+            + "xmi:id=\"" + str(uuid4()) + "\">"
+        print "          <value xsi:nil=\"true\"/>"
+        print "        </defaultValue>"
+        print "      </ownedParameter>"
+
 def PrintOwnedReceptions(ident, odl_data):
     states      = GetStates(odl_data)
     transitions = GetTransitions(odl_data, directory, states)
+    parameters  = GetParameters(odl_data)
 
     events = []
 
@@ -106,9 +122,19 @@ def PrintOwnedReceptions(ident, odl_data):
             continue
 
         events.append(transition.event_id)
-        print "    <ownedReception xmi:id=\"_" + str(uuid4()) + "\" " \
+        string = "    <ownedReception xmi:id=\"_" + str(uuid4()) + "\" " \
             + "name=\"Reception_" + str(len(events) - 1) + "\" " \
-            + "signal=\"_" + signals[transition.event_id][1] + "\"/>"
+            + "signal=\"_" + signals[transition.event_id][1] + "\""
+
+        if parameters[transition.event_id] == []:
+            string += "/>"
+            print string
+        else:
+            string += ">"
+            print string
+            PrintParameters(parameters[transition.event_id])
+            print "    </ownedReception>"
+
 
 def PrintTransition(transition, states, indent, count):
     if transition.event == "Entry/" \

@@ -255,6 +255,24 @@ def GetEvents(odl_data):
 
     return events
 
+def GetParameters(odl_data):
+    parameters = {}
+
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Event":
+            continue
+
+        version = GetVersion(odl_data[ident][1])
+        parameters[ident] = []
+
+        for item in version[2]:
+            if item[0] == "Relationship" \
+                    and item[1] == "_Art1_Event_To_Parameter" \
+                    and item[2] == "_Art1_Parameter":
+                parameters[ident].append(GetName(odl_data[item[3]][1]))
+
+    return parameters
+
 def GetStates(odl_data):
     states = {}
 
