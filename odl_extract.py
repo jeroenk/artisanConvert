@@ -76,6 +76,9 @@ def GetClasses(odl_data):
 
     for ident in odl_data:
         if odl_data[ident][0] == "_Art1_Class":
+            if ident in classes:
+                raise OdlExtractException("Class defined multiple times")
+
             classes[ident] = GetName(odl_data[ident][1])
 
     return classes
