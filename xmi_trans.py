@@ -3,16 +3,13 @@ from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
     GetAssociations, GetEvents, GetParameters, GetStates, GetTransitions
 from uuid        import uuid4
 from cgi         import escape
-
-#directory = "model"
-directory = "big_model"
+from sys         import argv, stderr
 
 classes      = None
 associations = None
 parameters   = None
 states       = None
 transitions  = None
-
 
 signals = {}
 times   = {}
@@ -442,8 +439,16 @@ def main():
     global classes, super_classes, attributes, associations, parameters, \
         states, transitions
 
+    if len(argv) != 2:
+        stderr.write("Usage: python " + argv[0] + " <input directory>\n")
+        exit(1)
+
+    directory = argv[1]
+
+    stderr.write("Parsing input\n")
     odl_data = OdlParseFile(directory)
 
+    stderr.write("Finding relevant data\n")
     classes       = GetClasses(odl_data)
     super_classes = GetSuperClasses(odl_data, classes)
     attributes    = GetAttributes(odl_data, classes)
@@ -452,6 +457,7 @@ def main():
     states        = GetStates(odl_data)
     transitions   = GetTransitions(odl_data, directory, states)
 
+    stderr.write("Writing output\n")
     GatherSignals(odl_data)
     GatherTimesAndChanges(odl_data)
 
@@ -463,5 +469,6 @@ def main():
     PrintTimeEvents(odl_data)
     PrintChangeEvents(odl_data)
     PrintFooter()
+    stderr.write("Done!\n")
 
 main()
