@@ -115,6 +115,7 @@ def p_detail_entries(p):
 
 def p_detail(p):
     """detail : attribute
+              | configuration_in
               | version
               | relationship
               | file
@@ -150,6 +151,12 @@ def p_string_list(p):
         p[0].append(p[3])
     else:
         p[0] = [p[1]]
+
+def p_configuration_in(p):
+    """configuration_in : CONFIGURATION STRING STRING STRING
+    """
+
+    p[0] = ("Configuration", p[2], p[3], p[4])
 
 def p_version(p):
     """version : VERSION STRING details

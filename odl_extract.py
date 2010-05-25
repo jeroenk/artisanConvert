@@ -333,13 +333,16 @@ def GetExternal(version, directory):
 
             if len(item[2]) == 2:
                 f = open(directory + "/" + item[2][0])
+                data = f.read()
+                data = data.replace("\x0c", "")
             elif len(item[2]) == 1:
-                if item[2][0] == "":
-                    return ""
+                data = item[2][0]
 
-                f = StringIO()
-                f.write(item[2][0])
+            if data == "":
+                return ""
 
+            f = StringIO()
+            f.write(data)
             doc = Rtf15Reader.read(f)
             external = PlaintextWriter.write(doc).getvalue()
             external = external.replace("\n\n", "\n")
