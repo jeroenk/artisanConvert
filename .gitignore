@@ -4,6 +4,7 @@ parsetab.py
 parser.out
 model/*
 big_model/*
+big_model_old/*
 ply/*
 pyth/*
 .DS_Store
