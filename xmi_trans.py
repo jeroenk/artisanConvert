@@ -21,7 +21,7 @@ def GatherSignals(odl_data):
     events = GetEvents(odl_data)
 
     for event in events:
-        signals[event] = (events[event], str(uuid4()))
+        signals[event] = [events[event], str(uuid4()), False]
 
 def GatherTimesAndChanges(odl_data):
     for transition in transitions:
@@ -143,6 +143,8 @@ def PrintOwnedReceptions(ident, odl_data):
         string = "    <ownedReception xmi:id=\"_" + str(uuid4()) + "\" " \
             + "name=\"Reception_" + str(len(events) - 1) + "\" " \
             + "signal=\"_" + signals[transition.event_id][1] + "\""
+
+        signals[transition.event_id][2] = True
 
         if parameters[transition.event_id] == []:
             string += "/>"
@@ -393,6 +395,9 @@ def PrintAssociations(odl_data):
 
 def PrintSignals(odl_data):
     for signal in signals:
+        if not signals[signal][2]:
+            continue
+
         print "  <packagedElement xmi:type=\"uml:Signal\" " \
             + "xmi:id=\"_" + signals[signal][1] + "\" " \
             + "name=\"" + escape(signals[signal][0], True) + "\"/>"
@@ -401,6 +406,9 @@ def PrintSignalEvents():
     count = 0
 
     for signal in signals:
+        if not signals[signal][2]:
+            continue
+
         print "  <packagedElement xmi:type=\"uml:SignalEvent\" " \
             + "xmi:id=\"_" + signal + "\" " \
             + "name=\"SignalEvent_" + str(count) + "\" " \
@@ -521,7 +529,7 @@ def main():
     odl_data = OdlParseFile(directory)
 
 
-    ident = FindPackage(["Micro Interlocking", "xUML Specification", "Functional Specification"], odl_data)
+    ident = FindPackage(["Micro_Interlocking", "xUML_Specification", "Functional_Specification"], odl_data)
     packages = FindAllSubpackages(ident, odl_data)
     used_classes = FindClassesInPackages(packages, odl_data)
 

@@ -66,13 +66,15 @@ def GetModel(odl_data):
     for ident in odl_data:
         if odl_data[ident][0] == "_Art1_Model":
             model_id = GetId(odl_data[ident][1])
-            return (model_id, ident)
+            name = ident.replace(' ', '_').replace('-', '_').replace('&', "and")
+            return (model_id, name)
 
     raise OdlExtractException("No model name found")
 
 def GetName(data):
     version = GetVersion(data)
-    return version[1][6:]
+    return version[1][6:].replace(' ', '_') \
+        .replace('-', '_').replace('&', "and")
 
 def GetClasses(odl_data, used_classes):
     """Yields dictionary from class identifer to class name
@@ -178,7 +180,7 @@ def GetDefaultValue(ident, odl_data, directory):
             custom_version = GetVersion(odl_data[data[3]][1])
 
             if IsDefaultValue(custom_version):
-                return GetExternal(custom_version, directory)
+                return GetExternal(custom_version, odl_data, directory)
 
     return None
 
@@ -385,7 +387,54 @@ def GetStates(odl_data, classes):
 
     return used_states
 
-def GetExternal(version, directory):
+def GetReplaceData(version, odl_data):
+    start = None
+    name  = None
+    obj   = None
+
+    for data in version[2]:
+        if data[0] == "Attribute" \
+                and data[1] == "_Art1_TokenStart":
+            start = int(data[2][0])
+        elif data[0] == "Attribute" \
+                and data[1] == "_Art1_LastNameText":
+            name = data[2][0]
+            name = name[:len(name) - 1]
+        elif data[0] == "Relationship" \
+                and data[1] == "_Art1_ModelObjectToken_To_ModelObject":
+            obj = GetName(odl_data[data[3]][1])
+
+    return (start, name, obj)
+
+def ReplaceTextNames(external, version, odl_data):
+    replacements = {}
+
+    for data in version[2]:
+        if data[0] == "Relationship" \
+                and data[1] == "_Art1_TextObject_To_ModelObjectToken" \
+                and data[2] == "_Art1_ModelObjectToken":
+            replace = GetReplaceData(GetVersion(odl_data[data[3]][1]), odl_data)
+            replacements[replace[0]] = replace
+
+    i = len(external) - 1
+
+    while i >= 0:
+        if i in replacements:
+            length = len(replacements[i][1])
+            if external[i - 1:i + length - 1] == replacements[i][1]:
+                external = external[:i - 1] + replacements[i][2] \
+                    + external[i + length - 1:]
+            elif external[i:i + length] == replacements[i][1]:
+                external = external[:i] + replacements[i][2] \
+                    + external[i + length:]
+            else:
+                raise OdlExtractException("Cannot find string to replace")
+
+        i -= 1
+
+    return external
+
+def GetExternal(version, odl_data, directory):
     external = ""
 
     for item in version[2]:
@@ -408,7 +457,7 @@ def GetExternal(version, directory):
             external = PlaintextWriter.write(doc).getvalue()
             external = external.replace("\n\n", "\n")
 
-    return external
+    return ReplaceTextNames(external, version, odl_data)
 
 def GetType(version):
     for item in version[2]:
@@ -446,15 +495,17 @@ def FillTransitionDetails(odl_data, directory, transitions):
                 change_version = GetVersion(odl_data[item[3]][1])
 
                 if etype == 2:
-                    event = "Time/" + GetExternal(change_version, directory)
+                    event = "Time/" + GetExternal(change_version, odl_data, \
+                                                      directory)
                 elif etype == 3:
-                    event = "Change/" + GetExternal(change_version, directory)
+                    event = "Change/" + GetExternal(change_version, odl_data, \
+                                                        directory)
 
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_EventActionBlock_To_GuardCondition" \
                     and item[2] == "_Art1_GuardCondition":
                 guard_version = GetVersion(odl_data[item[3]][1])
-                guard    = GetExternal(guard_version, directory)
+                guard    = GetExternal(guard_version, odl_data, directory)
                 guard_id = item[3]
 
         if trans_ident not in transitions:
@@ -475,7 +526,8 @@ def FillTransitionDetails(odl_data, directory, transitions):
         if etype == 0 and trans_ident == ident:
             event = "signal_in/" + event[7:]
 
-        transitions[trans_ident].action   = GetExternal(version, directory)
+        transitions[trans_ident].action   = GetExternal(version, odl_data, \
+                                                            directory)
         transitions[trans_ident].event    = event
         transitions[trans_ident].event_id = event_id
         transitions[trans_ident].guard    = guard
