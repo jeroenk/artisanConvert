@@ -5,6 +5,8 @@ from uuid        import uuid4
 from cgi         import escape
 from sys         import argv, stderr
 
+from odl_extract import GetName, GetVersion
+
 classes      = None
 associations = None
 parameters   = None
@@ -51,15 +53,30 @@ def PrintSuperClasses(ident, super_classes):
 
 def PrintAttributes(attributes):
     for attribute in attributes:
-        if attribute[1][0] == "/":
+        if attribute.name[0] == "/":
             type = "_brobQF6WEd-1BtN3LP_f7A"
         else:
             type = "_cD-CwF6WEd-1BtN3LP_f7A"
 
-        print "    <ownedAttribute xmi:id=\"_" + attribute[0] + "\" " \
-            + "name=\"" + attribute[1] + "\" " \
+        string = "    <ownedAttribute xmi:id=\"_" + attribute.ident + "\" " \
+            + "name=\"" + attribute.name + "\" " \
             + "type=\"" + type + "\" " \
-            + "isUnique=\"false\"/>"
+            + "isUnique=\"false\""
+
+        if attribute.default == None:
+            string += "/>"
+            print string
+            continue
+
+        string += ">"
+        print string
+
+        print "      <defaultValue xmi:type=\"uml:OpaqueExpression\" " \
+            + "xmi:id=\"_" + str(uuid4()) + "\">"
+        print "        <language>xuml</language>"
+        print "        <body>" + attribute.default + "</body>"
+        print "      </defaultValue>"
+        print "    </ownedAttribute>"
 
 def PrintValues(upper, lower):
     print "      <upperValue xmi:type=\"uml:LiteralUnlimitedNatural\" " \
@@ -435,6 +452,61 @@ def PrintFooter():
         + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"Integer\"/>"
     print "</uml:Model>"
 
+def FindSubpackageOf(ident, path, odl_data):
+    version = GetVersion(odl_data[ident][1])
+
+    for item in version[2]:
+        if item[0] == "Relationship" \
+                and item[1] == "_Art1_Package_To_PackageItem" \
+                and item[2] == "_Art1_Package" \
+                and GetName(odl_data[item[3]][1]) == path[0]:
+            if len(path) == 1:
+                return item[3]
+            else:
+                return FindSubpackageOf(item[3], path[1:], odl_data)
+
+    raise Exception("Subpackage " + path[0] + " not found")
+
+def FindPackage(path, odl_data):
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Package":
+            continue
+
+        if GetName(odl_data[ident][1]) == path[0]:
+            if len(path) == 1:
+                return ident
+            else:
+                return FindSubpackageOf(ident, path[1:], odl_data)
+
+    raise Exception("Package " + path[0] + " not found")
+
+def FindAllSubpackages(ident, odl_data):
+    version = GetVersion(odl_data[ident][1])
+
+    subpackages = [ident]
+
+    for item in version[2]:
+        if item[0] == "Relationship" \
+                and item[1] == "_Art1_Package_To_PackageItem" \
+                and item[2] == "_Art1_Package":
+            subpackages += FindAllSubpackages(item[3], odl_data)
+
+    return subpackages
+
+def FindClassesInPackages(packages, odl_data):
+    classes = []
+
+    for ident in packages:
+        version = GetVersion(odl_data[ident][1])
+
+        for item in version[2]:
+            if item[0] == "Relationship" \
+                    and item[1] == "_Art1_Package_To_PackageItem" \
+                    and item[2] == "_Art1_Class":
+                classes.append(item[3])
+
+    return classes
+
 def main():
     global classes, super_classes, attributes, associations, parameters, \
         states, transitions
@@ -448,13 +520,18 @@ def main():
     stderr.write("Parsing input\n")
     odl_data = OdlParseFile(directory)
 
+
+    ident = FindPackage(["Micro Interlocking", "xUML Specification", "Functional Specification"], odl_data)
+    packages = FindAllSubpackages(ident, odl_data)
+    used_classes = FindClassesInPackages(packages, odl_data)
+
     stderr.write("Finding relevant data\n")
-    classes       = GetClasses(odl_data)
+    classes       = GetClasses(odl_data, used_classes)
     super_classes = GetSuperClasses(odl_data, classes)
-    attributes    = GetAttributes(odl_data, classes)
+    attributes    = GetAttributes(odl_data, classes, directory)
     associations  = GetAssociations(odl_data, classes)
     parameters    = GetParameters(odl_data)
-    states        = GetStates(odl_data)
+    states        = GetStates(odl_data, classes)
     transitions   = GetTransitions(odl_data, directory, states)
 
     stderr.write("Writing output\n")

@@ -33,6 +33,12 @@ class StateData:
         self.is_parallel = False
         self.superstate  = None
 
+class AttributeData:
+    def __init__(self):
+        self.name    = None
+        self.ident   = None
+        self.default = None
+
 def GetVersion(data):
     version = None
 
@@ -68,7 +74,7 @@ def GetName(data):
     version = GetVersion(data)
     return version[1][6:]
 
-def GetClasses(odl_data):
+def GetClasses(odl_data, used_classes):
     """Yields dictionary from class identifer to class name
     """
 
@@ -78,6 +84,9 @@ def GetClasses(odl_data):
         if odl_data[ident][0] == "_Art1_Class":
             if ident in classes:
                 raise OdlExtractException("Class defined multiple times")
+
+            if ident not in used_classes:
+                continue
 
             classes[ident] = GetName(odl_data[ident][1])
 
@@ -150,8 +159,31 @@ def GetAttributeIds(version, attrib_ids, ident):
 
     return attrib_ids
 
-def GetAttributes(odl_data, classes):
-    """Yields dictionary from class identifer to attribute identifier name pairs
+def IsDefaultValue(version):
+    for data in version[2]:
+        if data[0] == "Attribute" \
+                and data[1] == "_Art1_CustomPropertyName" \
+                and data[2][0] == "Default Value":
+            return True
+
+    return False
+
+def GetDefaultValue(ident, odl_data, directory):
+    version = GetVersion(odl_data[ident][1])
+
+    for data in version[2]:
+        if data[0] == "Relationship" \
+                and data[1] == "_Art1_ModelObject_To_CustomPropertyTextObject" \
+                and data[2] == "_Art1_CustomPropertyTextObject":
+            custom_version = GetVersion(odl_data[data[3]][1])
+
+            if IsDefaultValue(custom_version):
+                return GetExternal(custom_version, directory)
+
+    return None
+
+def GetAttributes(odl_data, classes, directory):
+    """Yields dictionary from class identifer to attribute data
     """
 
     attrib_ids = {}
@@ -172,7 +204,11 @@ def GetAttributes(odl_data, classes):
         attributes[ident] = []
 
         for attrib_id in attrib_ids[ident]:
-            attributes[ident].append((attrib_id, names[attrib_id]))
+            data         = AttributeData()
+            data.name    = names[attrib_id]
+            data.ident   = attrib_id
+            data.default = GetDefaultValue(attrib_id, odl_data, directory)
+            attributes[ident].append(data)
 
     return attributes
 
@@ -182,12 +218,17 @@ def ParseMultiplicity(index, multiplicity, association):
     elif multiplicity == "1":
         association.upper[index] = "1"
         association.lower[index] = "1"
+    elif multiplicity == "2":
+        association.upper[index] = "2"
+        association.lower[index] = "2"
     elif multiplicity == "0..1":
         association.upper[index] = "1"
         association.lower[index] = "0"
-    elif  multiplicity == "1..*":
+    elif multiplicity == "1..*":
         association.upper[index] = "*"
         association.lower[index] = "1"
+    elif multiplicity == "":
+        association.upper[index] = "*"
     else:
         raise OdlExtractException("Unknown multiplicity " + multiplicity \
                                       + " found in association")
@@ -199,21 +240,23 @@ def GetAssociations(odl_data, classes):
         if odl_data[ident][0] != "_Art1_Association":
             continue
 
+        association = AssociationData()
         version = GetVersion(odl_data[ident][1])
-        associations[ident] = AssociationData()
 
         for item in version[2]:
             if item[0] == "Attribute":
                 if item[1] == "_Art1_EndMultiplicityUml":
-                    ParseMultiplicity(0, item[2][0], associations[ident])
+                    ParseMultiplicity(0, item[2][0], association)
                 elif item[1] == "_Art1_StartMultiplicityUml":
-                    ParseMultiplicity(1, item[2][0], associations[ident])
+                    ParseMultiplicity(1, item[2][0], association)
 
-        if associations[ident].upper[0] == None:
-            associations[ident].upper[0] = "*"
+        if association.upper[0] == None:
+            association.upper[0] = "*"
 
-        if associations[ident].upper[1] == None:
-            associations[ident].upper[1] = "*"
+        if association.upper[1] == None:
+            association.upper[1] = "*"
+
+        associations[ident] = association
 
     roles = {}
 
@@ -237,8 +280,10 @@ def GetAssociations(odl_data, classes):
                 index = int(item[2][0])
 
         roles[ident] = (assoc, index)
-        associations[assoc].name[index] = name
-        associations[assoc].role[index] = ident
+
+        if index != None:
+            associations[assoc].name[index] = name
+            associations[assoc].role[index] = ident
 
     for ident in classes:
         version = GetVersion(odl_data[ident][1])
@@ -247,9 +292,19 @@ def GetAssociations(odl_data, classes):
             if item[0] == "Relationship" \
                     and item[1] == "_Art1_Class_To_Role" \
                     and item[2] == "_Art1_Role":
+                if roles[item[3]][1] == None:
+                    continue
+
                 associations[roles[item[3]][0]].owner[roles[item[3]][1]] = ident
 
-    return associations
+    associations_used = {}
+
+    for ident in associations:
+        if associations[ident].owner[0] in classes \
+                and associations[ident].owner[1] in classes:
+            associations_used[ident] = associations[ident]
+
+    return associations_used
 
 def GetEvents(odl_data):
     events = {}
@@ -280,7 +335,7 @@ def GetParameters(odl_data):
 
     return parameters
 
-def GetStates(odl_data):
+def GetStates(odl_data, classes):
     states = {}
 
     for ident in odl_data:
@@ -322,7 +377,13 @@ def GetStates(odl_data):
                 states[item[3]].is_parallel = True
                 states[ident].superstate = item[3]
 
-    return states
+    used_states = {}
+
+    for ident in states:
+        if states[ident].class_id in classes:
+            used_states[ident] = states[ident]
+
+    return used_states
 
 def GetExternal(version, directory):
     external = ""
@@ -396,6 +457,9 @@ def FillTransitionDetails(odl_data, directory, transitions):
                 guard    = GetExternal(guard_version, directory)
                 guard_id = item[3]
 
+        if trans_ident not in transitions:
+            continue
+
         if etype == 4:
             event = "Entry/"
         elif etype == 5:
@@ -404,6 +468,9 @@ def FillTransitionDetails(odl_data, directory, transitions):
             event = "None"
         elif etype == 8:
             event = "Dead"
+
+        if event == None:
+            raise OdlExtractException("Found unknown event type: " + str(etype))
 
         if etype == 0 and trans_ident == ident:
             event = "signal_in/" + event[7:]
@@ -452,4 +519,11 @@ def GetTransitions(odl_data, directory, states):
                 data.target   = ident
                 transitions[item[3]] = data
 
-    return FillTransitionDetails(odl_data, directory, transitions).values()
+    used_transitions = {}
+
+    for ident in transitions:
+        if transitions[ident].source != None \
+                and transitions[ident].target != None:
+            used_transitions[ident] = transitions[ident]
+
+    return FillTransitionDetails(odl_data, directory, used_transitions).values()
