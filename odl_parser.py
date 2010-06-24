@@ -71,7 +71,7 @@ def p_top_entries(p):
         p[0] = {}
 
         if p[1] != None:
-           p[0][p[1][0]] = p[1][1]
+            p[0][p[1][0]] = p[1][1]
 
 def p_top_entry(p):
     """top_entry : configuration

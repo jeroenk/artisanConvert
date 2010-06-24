@@ -7,11 +7,13 @@ from sys         import argv, stderr
 
 from odl_extract import GetName, GetVersion
 
-classes      = None
-associations = None
-parameters   = None
-states       = None
-transitions  = None
+classes       = None
+super_classes = None
+attributes    = None
+associations  = None
+parameters    = None
+states        = None
+transitions   = None
 
 signals = {}
 times   = {}
@@ -23,7 +25,7 @@ def GatherSignals(odl_data):
     for event in events:
         signals[event] = [events[event], str(uuid4()), False]
 
-def GatherTimesAndChanges(odl_data):
+def GatherTimesAndChanges():
     for transition in transitions:
         if transition.event[:7] == "Change/":
             changes[transition.ident] = str(uuid4())
@@ -46,21 +48,21 @@ def PrintClassHeader(ident, name):
         + "name=\"" + escape(name, True) + "\" " \
         + "isActive=\"true\">"
 
-def PrintSuperClasses(ident, super_classes):
+def PrintSuperClasses(ident):
     for general_ident in super_classes[ident]:
         print "    <generalization xmi:id=\"_" + general_ident + "\" " \
             + "general=\"_" + super_classes[ident][general_ident] + "\"/>"
 
-def PrintAttributes(attributes):
-    for attribute in attributes:
+def PrintAttributes(class_attributes):
+    for attribute in class_attributes:
         if attribute.name[0] == "/":
-            type = "_brobQF6WEd-1BtN3LP_f7A"
+            attribute_type = "_brobQF6WEd-1BtN3LP_f7A"
         else:
-            type = "_cD-CwF6WEd-1BtN3LP_f7A"
+            attribute_type = "_cD-CwF6WEd-1BtN3LP_f7A"
 
         string = "    <ownedAttribute xmi:id=\"_" + attribute.ident + "\" " \
             + "name=\"" + attribute.name + "\" " \
-            + "type=\"" + type + "\" " \
+            + "type=\"" + attribute_type + "\" " \
             + "isUnique=\"false\""
 
         if attribute.default == None:
@@ -100,7 +102,7 @@ def PrintAttributeAssociation(ident, data, index):
     PrintValues(data.upper[index], data.lower[index])
     print "    </ownedAttribute>"
 
-def PrintAttributeAssociations(ident, associations):
+def PrintAttributeAssociations(ident):
     for association_ident in associations:
         data = associations[association_ident]
 
@@ -110,8 +112,8 @@ def PrintAttributeAssociations(ident, associations):
         if data.owner[1] == ident and data.name[0] != "":
             PrintAttributeAssociation(association_ident, data, 0)
 
-def PrintParameters(parameters):
-    for parameter in parameters:
+def PrintParameters(event_parameters):
+    for parameter in event_parameters:
         print "      <ownedParameter xmi:id=\"_" + str(uuid4()) + "\" " \
             + "name=\"" + escape(parameter, True) + "\" " \
             + "type=\"_cD-CwF6WEd-1BtN3LP_f7A\">"
@@ -125,7 +127,7 @@ def PrintParameters(parameters):
         print "        </defaultValue>"
         print "      </ownedParameter>"
 
-def PrintOwnedReceptions(ident, odl_data):
+def PrintOwnedReceptions(ident):
     events = []
 
     for transition in transitions:
@@ -310,7 +312,7 @@ def PrintState(ident, indent):
 
         print indent + "        </subvertex>"
 
-def PrintStateMachines(ident, class_name, odl_data):
+def PrintStateMachines(ident, class_name):
     outer_states = []
 
     for state_ident in states:
@@ -344,17 +346,17 @@ def PrintStateMachines(ident, class_name, odl_data):
 def PrintClassFooter():
     print "  </packagedElement>"
 
-def PrintClasses(odl_data):
+def PrintClasses():
     for ident in classes:
         PrintClassHeader(ident, classes[ident])
-        PrintSuperClasses(ident, super_classes)
+        PrintSuperClasses(ident)
         PrintAttributes(attributes[ident])
-        PrintAttributeAssociations(ident, associations)
-        PrintOwnedReceptions(ident, odl_data)
-        PrintStateMachines(ident, classes[ident], odl_data)
+        PrintAttributeAssociations(ident)
+        PrintOwnedReceptions(ident)
+        PrintStateMachines(ident, classes[ident])
         PrintClassFooter()
 
-def PrintOwnedEnds(data, ident, classes):
+def PrintOwnedEnds(data, ident):
     if data.name[0] == "":
         print "    <ownedEnd xmi:id=\"_" + data.role[0] + "\" " \
             + "name=\"" + escape(classes[data.owner[0]], True) + "\" " \
@@ -373,7 +375,7 @@ def PrintOwnedEnds(data, ident, classes):
         PrintValues(data.upper[1], data.lower[1])
         print "    </ownedEnd>"
 
-def PrintAssociations(odl_data):
+def PrintAssociations():
     for ident in associations:
         data = associations[ident]
 
@@ -388,12 +390,12 @@ def PrintAssociations(odl_data):
         else:
             print string + ">"
 
-        PrintOwnedEnds(data, ident, classes)
+        PrintOwnedEnds(data, ident)
 
         if data.name[0] == "" or data.name[1] == "":
             print "  </packagedElement>"
 
-def PrintSignals(odl_data):
+def PrintSignals():
     for signal in signals:
         if not signals[signal][2]:
             continue
@@ -415,7 +417,7 @@ def PrintSignalEvents():
             + "signal=\"_" + signals[signal][1] + "\"/>"
         count += 1
 
-def PrintTimeEvents(odl_data):
+def PrintTimeEvents():
     count = 0
 
     for transition in transitions:
@@ -434,7 +436,7 @@ def PrintTimeEvents(odl_data):
 
         count += 1
 
-def PrintChangeEvents(odl_data):
+def PrintChangeEvents():
     count = 1
 
     for transition in transitions:
@@ -502,7 +504,7 @@ def FindAllSubpackages(ident, odl_data):
     return subpackages
 
 def FindClassesInPackages(packages, odl_data):
-    classes = []
+    used_classes = []
 
     for ident in packages:
         version = GetVersion(odl_data[ident][1])
@@ -511,9 +513,9 @@ def FindClassesInPackages(packages, odl_data):
             if item[0] == "Relationship" \
                     and item[1] == "_Art1_Package_To_PackageItem" \
                     and item[2] == "_Art1_Class":
-                classes.append(item[3])
+                used_classes.append(item[3])
 
-    return classes
+    return used_classes
 
 def main():
     global classes, super_classes, attributes, associations, parameters, \
@@ -544,15 +546,15 @@ def main():
 
     stderr.write("Writing output\n")
     GatherSignals(odl_data)
-    GatherTimesAndChanges(odl_data)
+    GatherTimesAndChanges()
 
     PrintHeader(odl_data)
-    PrintClasses(odl_data)
-    PrintAssociations(odl_data)
-    PrintSignals(odl_data)
+    PrintClasses()
+    PrintAssociations()
+    PrintSignals()
     PrintSignalEvents()
-    PrintTimeEvents(odl_data)
-    PrintChangeEvents(odl_data)
+    PrintTimeEvents()
+    PrintChangeEvents()
     PrintFooter()
     stderr.write("Done!\n")
 
