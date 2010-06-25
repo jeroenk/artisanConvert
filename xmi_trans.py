@@ -1,11 +1,10 @@
 from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
-    GetAssociations, GetEvents, GetParameters, GetStates, GetTransitions
+    GetAssociations, GetEvents, GetParameters, GetStates, GetTransitions, \
+    FindPackageClasses
 from uuid        import uuid4
 from cgi         import escape
 from sys         import argv, stderr
-
-from odl_extract import GetName, GetVersion
 
 classes       = None
 super_classes = None
@@ -462,67 +461,13 @@ def PrintFooter():
         + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"Integer\"/>"
     print "</uml:Model>"
 
-def FindSubpackageOf(ident, path, odl_data):
-    version = GetVersion(odl_data[ident][1])
-
-    for item in version[2]:
-        if item[0] == "Relationship" \
-                and item[1] == "_Art1_Package_To_PackageItem" \
-                and item[2] == "_Art1_Package" \
-                and GetName(odl_data[item[3]][1]) == path[0]:
-            if len(path) == 1:
-                return item[3]
-            else:
-                return FindSubpackageOf(item[3], path[1:], odl_data)
-
-    raise Exception("Subpackage " + path[0] + " not found")
-
-def FindPackage(path, odl_data):
-    for ident in odl_data:
-        if odl_data[ident][0] != "_Art1_Package":
-            continue
-
-        if GetName(odl_data[ident][1]) == path[0]:
-            if len(path) == 1:
-                return ident
-            else:
-                return FindSubpackageOf(ident, path[1:], odl_data)
-
-    raise Exception("Package " + path[0] + " not found")
-
-def FindAllSubpackages(ident, odl_data):
-    version = GetVersion(odl_data[ident][1])
-
-    subpackages = [ident]
-
-    for item in version[2]:
-        if item[0] == "Relationship" \
-                and item[1] == "_Art1_Package_To_PackageItem" \
-                and item[2] == "_Art1_Package":
-            subpackages += FindAllSubpackages(item[3], odl_data)
-
-    return subpackages
-
-def FindClassesInPackages(packages, odl_data):
-    used_classes = []
-
-    for ident in packages:
-        version = GetVersion(odl_data[ident][1])
-
-        for item in version[2]:
-            if item[0] == "Relationship" \
-                    and item[1] == "_Art1_Package_To_PackageItem" \
-                    and item[2] == "_Art1_Class":
-                used_classes.append(item[3])
-
-    return used_classes
-
 def main():
     global classes, super_classes, attributes, associations, parameters, \
         states, transitions
 
-    if len(argv) != 2:
-        stderr.write("Usage: python " + argv[0] + " <input directory>\n")
+    if len(argv) < 2 or len(argv) > 3:
+        stderr.write("Usage: python " + argv[0] + " <input directory> " + \
+                         "[package path]\n")
         exit(1)
 
     directory = argv[1]
@@ -530,12 +475,14 @@ def main():
     stderr.write("Parsing input\n")
     odl_data = OdlParseFile(directory)
 
-
-    ident = FindPackage(["Micro_Interlocking", "xUML_Specification", "Functional_Specification"], odl_data)
-    packages = FindAllSubpackages(ident, odl_data)
-    used_classes = FindClassesInPackages(packages, odl_data)
-
     stderr.write("Finding relevant data\n")
+
+    if len(argv) == 3:
+        used_classes = FindPackageClasses(argv[2], odl_data)
+        stderr.write("Using package path " + argv[2] + "\n")
+    else:
+        used_classes = None
+
     classes       = GetClasses(odl_data, used_classes)
     super_classes = GetSuperClasses(odl_data, classes)
     attributes    = GetAttributes(odl_data, classes, directory)

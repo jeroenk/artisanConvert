@@ -87,7 +87,7 @@ def GetClasses(odl_data, used_classes):
             if ident in classes:
                 raise OdlExtractException("Class defined multiple times")
 
-            if ident not in used_classes:
+            if used_classes != None and ident not in used_classes:
                 continue
 
             classes[ident] = GetName(odl_data[ident][1])
@@ -407,6 +407,7 @@ def GetReplaceData(version, odl_data):
     return (start, name, obj)
 
 def ReplaceTextNames(external, version, odl_data):
+    old_external = external
     replacements = {}
 
     for data in version[2]:
@@ -428,7 +429,11 @@ def ReplaceTextNames(external, version, odl_data):
                 external = external[:i] + replacements[i][2] \
                     + external[i + length:]
             else:
-                raise OdlExtractException("Cannot find string to replace")
+                raise OdlExtractException("Cannot replace string \"" \
+                                              + replacements[i][1] \
+                                              + "\" at position " \
+                                              + str(i) + " in:\n" \
+                                              + old_external)
 
         i -= 1
 
@@ -579,3 +584,66 @@ def GetTransitions(odl_data, directory, states):
             used_transitions[ident] = transitions[ident]
 
     return FillTransitionDetails(odl_data, directory, used_transitions).values()
+
+def FindSubpackageOf(ident, path, odl_data):
+    version = GetVersion(odl_data[ident][1])
+
+    for item in version[2]:
+        if item[0] == "Relationship" \
+                and item[1] == "_Art1_Package_To_PackageItem" \
+                and item[2] == "_Art1_Package" \
+                and GetName(odl_data[item[3]][1]) == path[0]:
+            if len(path) == 1:
+                return item[3]
+            else:
+                return FindSubpackageOf(item[3], path[1:], odl_data)
+
+    raise Exception("Subpackage " + path[0] + " not found")
+
+def FindPackage(path, odl_data):
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Package":
+            continue
+
+        if GetName(odl_data[ident][1]) == path[0]:
+            if len(path) == 1:
+                return ident
+            else:
+                return FindSubpackageOf(ident, path[1:], odl_data)
+
+    raise Exception("Package " + path[0] + " not found")
+
+def FindAllSubpackages(ident, odl_data):
+    version = GetVersion(odl_data[ident][1])
+
+    subpackages = [ident]
+
+    for item in version[2]:
+        if item[0] == "Relationship" \
+                and item[1] == "_Art1_Package_To_PackageItem" \
+                and item[2] == "_Art1_Package":
+            subpackages += FindAllSubpackages(item[3], odl_data)
+
+    return subpackages
+
+def FindClassesInPackages(packages, odl_data):
+    used_classes = []
+
+    for ident in packages:
+        version = GetVersion(odl_data[ident][1])
+
+        for item in version[2]:
+            if item[0] == "Relationship" \
+                    and item[1] == "_Art1_Package_To_PackageItem" \
+                    and item[2] == "_Art1_Class":
+                used_classes.append(item[3])
+
+    return used_classes
+
+def FindPackageClasses(path, odl_data):
+    path_list = path.replace(' ', '_').replace('-', '_').replace('&', "and") \
+        .rsplit('/')
+    ident     = FindPackage(path_list, odl_data)
+    packages  = FindAllSubpackages(ident, odl_data)
+
+    return FindClassesInPackages(packages, odl_data)
