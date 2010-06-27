@@ -479,7 +479,7 @@ def main():
 
     if len(argv) == 3:
         used_classes = FindPackageClasses(argv[2], odl_data)
-        stderr.write("Using package path " + argv[2] + "\n")
+        stderr.write("Using package " + argv[2] + "\n")
     else:
         used_classes = None
 

@@ -354,9 +354,11 @@ def GetStates(odl_data, classes):
                     and item[2] == "_Art1_Class":
                 data.class_id = item[3]
             elif item[0] == "Attribute" \
-                    and item[1] =="_Art1_StateType" \
-                    and item[2][0] == "0":
-                data.vtype = "uml:Pseudostate"
+                    and item[1] =="_Art1_StateType":
+                if item[2][0] == "0":
+                    data.vtype = "uml:Pseudostate"
+                elif item[2][0] == "1":
+                    data.vtype = "uml:FinalState"
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_SuperState_To_SubStates" \
                     and item[2] == "_Art1_State":
