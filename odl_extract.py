@@ -253,7 +253,8 @@ def GetAssociations(odl_data, classes):
                     ParseMultiplicity(1, item[2][0], association)
 
         if association.upper[0] == None:
-            association.upper[0] = "*"
+            association.upper[0] = "1"
+            association.lower[0] = "0"
 
         if association.upper[1] == None:
             association.upper[1] = "*"
