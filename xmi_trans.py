@@ -423,13 +423,19 @@ def PrintTimeEvents():
         if transition.event[:5] != "Time/":
             continue
 
+        when_id = str(uuid4())
+
         print "  <packagedElement xmi:type=\"uml:TimeEvent\" " \
             + "xmi:id=\"_" + times[transition.ident] + "\" " \
             + "name=\"TimeEvent_" + str(count) + "\">"
 
-        print "    <when xmi:type=\"uml:LiteralString\" " \
-            + "xmi:id=\"_" + str(uuid4()) + "\" " \
-            + "value=\"after( " + transition.event[5:] + " )\"/>"
+        print "    <when xmi:id=\"_" + when_id + "\">"
+
+        print "      <expr xmi:type=\"uml:LiteralString\" " \
+            + "xmi:id=\"_" + when_id +"\" " \
+            + "value=\"after( " + transition.event[5:].strip("\n\r") + " )\"/>"
+
+        print "    </when>"
 
         print "  </packagedElement>"
 
