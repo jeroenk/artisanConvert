@@ -282,11 +282,12 @@ def GetAssociations(odl_data, classes):
                     and item[1] == "_Art1_AssociationEnd":
                 index = int(item[2][0])
 
-        roles[ident] = (assoc, index)
+        if index == None:
+            index = 0
 
-        if index != None:
-            associations[assoc].name[index] = name
-            associations[assoc].role[index] = ident
+        roles[ident] = (assoc, index)
+        associations[assoc].name[index] = name
+        associations[assoc].role[index] = ident
 
     for ident in classes:
         version = GetVersion(odl_data[ident][1])
@@ -295,9 +296,6 @@ def GetAssociations(odl_data, classes):
             if item[0] == "Relationship" \
                     and item[1] == "_Art1_Class_To_Role" \
                     and item[2] == "_Art1_Role":
-                if roles[item[3]][1] == None:
-                    continue
-
                 associations[roles[item[3]][0]].owner[roles[item[3]][1]] = ident
 
     associations_used = {}
