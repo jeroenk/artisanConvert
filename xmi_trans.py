@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
     GetAssociations, GetEvents, GetParameters, GetStates, GetTransitions, \
