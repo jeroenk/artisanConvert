@@ -195,4 +195,4 @@ def OdlParseFile(directory):
     # Replace (apparently meaningless) substring that affects lexing
     data = data.replace("\"\\\r\n    \"", "")
 
-    return odl_parser.parse(data, lexer=odl_lexer)
+    return odl_parser.parse(data, lexer = odl_lexer)

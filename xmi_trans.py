@@ -2,7 +2,7 @@
 from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
     GetAssociations, GetEvents, GetParameters, GetStates, GetTransitions, \
-    FindPackageClasses
+    FindPackageClasses, GetPackageHierarchy
 from uuid        import uuid4
 from cgi         import escape
 from sys         import argv, stderr
@@ -159,8 +159,7 @@ def PrintOwnedReceptions(ident):
 
 def PrintTransition(transition, indent, count):
     if transition.event == "Entry/" \
-            or transition.event == "Exit/" \
-            or transition.event == "Dead":
+            or transition.event == "Exit/":
         return
 
     string = indent \
@@ -468,27 +467,9 @@ def PrintFooter():
         + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"Integer\"/>"
     print "</uml:Model>"
 
-def main():
+def generate(odl_data, used_classes, directory):
     global classes, super_classes, attributes, associations, parameters, \
         states, transitions
-
-    if len(argv) < 2 or len(argv) > 3:
-        stderr.write("Usage: python " + argv[0] + " <input directory> " + \
-                         "[package path]\n")
-        exit(1)
-
-    directory = argv[1]
-
-    stderr.write("Parsing input\n")
-    odl_data = OdlParseFile(directory)
-
-    stderr.write("Finding relevant data\n")
-
-    if len(argv) == 3:
-        used_classes = FindPackageClasses(argv[2], odl_data)
-        stderr.write("Using package " + argv[2] + "\n")
-    else:
-        used_classes = None
 
     classes       = GetClasses(odl_data, used_classes)
     super_classes = GetSuperClasses(odl_data, classes)
@@ -511,5 +492,43 @@ def main():
     PrintChangeEvents()
     PrintFooter()
     stderr.write("Done!\n")
+
+def print_packages(packages, name):
+    for package in packages:
+        print name + package.name
+
+        new_name = name[:] + package.name + "/"
+        print_packages(package.children, new_name)
+
+def usage():
+    stderr.write("Usage: python <generate|list>" + argv[0] + \
+                     " <input directory> " + "[package path]\n")
+    exit(1)
+
+def main():
+    if len(argv) < 3 or len(argv) > 4:
+        usage()
+
+    directory = argv[2]
+
+    stderr.write("Parsing input\n")
+    odl_data = OdlParseFile(directory)
+
+    stderr.write("Finding relevant data\n")
+
+    if argv[1] == "list":
+        packages = GetPackageHierarchy(odl_data)
+        print_packages(packages, "")
+        exit(0)
+    elif argv[1] == "generate":
+        if len(argv) == 4:
+            used_classes = FindPackageClasses(argv[3], odl_data)
+            stderr.write("Using package " + argv[3] + "\n")
+        else:
+            used_classes = None
+
+        generate(odl_data, used_classes, directory)
+    else:
+        usage()
 
 main()

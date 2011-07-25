@@ -5,6 +5,14 @@ from StringIO                      import StringIO
 class OdlExtractException(Exception):
     pass
 
+class PackageData:
+    def __init__(self):
+        self.name     = None
+        self.ident    = None
+        self.is_child = False
+        self.child_id = []
+        self.children = []
+
 class TransitionData:
     def __init__(self):
         self.ident    = None
@@ -75,6 +83,10 @@ def GetName(data):
     version = GetVersion(data)
     return version[1][6:].replace(' ', '_') \
         .replace('-', '_').replace('&', "and")
+
+def GetNamePlain(data):
+    version = GetVersion(data)
+    return version[1][6:]
 
 def GetClasses(odl_data, used_classes):
     """Yields dictionary from class identifer to class name
@@ -523,8 +535,8 @@ def FillTransitionDetails(odl_data, directory, transitions):
             event = "Exit/"
         elif etype == None:
             event = "None"
-        elif etype == 8:
-            event = "Dead"
+        elif etype == 8: # Apparently also represents the absence of a signal
+            event = "None"
 
         if event == None:
             raise OdlExtractException("Found unknown event type: " + str(etype))
@@ -648,3 +660,40 @@ def FindPackageClasses(path, odl_data):
     packages  = FindAllSubpackages(ident, odl_data)
 
     return FindClassesInPackages(packages, odl_data)
+
+def GetPackageHierarchy(odl_data):
+    packages = {}
+
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Package":
+            continue
+
+        package = PackageData()
+        package.name  = GetNamePlain(odl_data[ident][1])
+        package.ident = ident
+
+        version = GetVersion(odl_data[ident][1])
+
+        for item in version[2]:
+            if item[0] == "Relationship" \
+                    and item[1] == "_Art1_Package_To_PackageItem" \
+                    and item[2] == "_Art1_Package":
+                package.child_id.append(item[3])
+
+        packages[ident] = package
+
+    for ident in packages:
+        for child_id in packages[ident].child_id:
+            if child_id not in packages:
+                raise Exception("Subpackage " + child_id + " not_found")
+
+            packages[ident].children.append(packages[child_id])
+            packages[child_id].is_child = True
+
+    top_packages = []
+
+    for ident in packages:
+        if not packages[ident].is_child:
+            top_packages.append(packages[ident])
+
+    return top_packages
