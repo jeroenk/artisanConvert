@@ -26,5 +26,5 @@ Artisan. Next, the tool can be invoked in two different ways:
 Dependencies
 ------------
 
-The tool depends on the Python 2 series version 2.5 or higher. The Python 3
-series is not supported.
+The tool depends on Python 2, version 2.5 or higher. Python 3 is not
+supported.
