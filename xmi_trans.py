@@ -3,9 +3,10 @@ from odl_parser  import OdlParseFile
 from odl_extract import GetModel, GetClasses, GetSuperClasses, GetAttributes, \
     GetAssociations, GetEvents, GetParameters, GetStates, GetTransitions, \
     FindPackageClasses, GetPackageHierarchy
-from uuid        import uuid4
-from cgi         import escape
-from sys         import argv, stderr
+
+from cgi  import escape
+from uuid import uuid4
+from sys  import argv, stderr
 
 classes       = None
 super_classes = None

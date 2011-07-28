@@ -1,6 +1,8 @@
 from pyth.plugins.rtf15.reader     import Rtf15Reader
 from pyth.plugins.plaintext.writer import PlaintextWriter
-from StringIO                      import StringIO
+
+from os.path  import join
+from StringIO import StringIO
 
 class OdlExtractException(Exception):
     pass
@@ -460,9 +462,11 @@ def GetExternal(version, odl_data, directory):
                 and item[1] == "_Art1_RTF":
 
             if len(item[2]) == 2:
-                f = open(directory + "/" + item[2][0])
+                file_name = join(directory, item[2][0])
+                f = open(file_name)
                 data = f.read()
                 data = data.replace("\x0c", "")
+                f.close()
             elif len(item[2]) == 1:
                 data = item[2][0]
 
@@ -471,7 +475,7 @@ def GetExternal(version, odl_data, directory):
 
             f = StringIO()
             f.write(data)
-            doc = Rtf15Reader.read(f)
+            doc = Rtf15Reader.read(f, clean_paragraphs = False)
             external = PlaintextWriter.write(doc).getvalue()
             external = external.replace("\n\n", "\n")
 
