@@ -1,11 +1,8 @@
+.DS_Store
 *~
 *.pyc
 parsetab.py
 parser.out
-model/*
-model_new/*
-big_model/*
-big_model_old/*
-ply/*
-pyth/*
-.DS_Store
+ply
+pyth
+*.xmi
