@@ -26,5 +26,21 @@ Artisan. Next, the tool can be invoked in two different ways:
 Dependencies
 ------------
 
-The tool depends on Python 2, version 2.5 or higher. Python 3 is not
-supported.
+The tool depends on Python 2, version 2.5 or higher; Python 3 is not
+supported. In addition the following external libraries are required:
+
+* ply, python lex-yacc:
+
+      http://www.dabeaz.com/ply/
+
+  We tested with version 3.4.
+
+* pyth, python text markup and conversion:
+
+      https://github.com/brendonh/pyth/wiki
+
+  Currently only the latest version from the pyth git repository works. The
+  repository is located at:
+
+      https://github.com/brendonh/pyth.git
+
