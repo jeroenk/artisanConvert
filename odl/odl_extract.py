@@ -465,17 +465,21 @@ def ReplaceTextNames(external, version, odl_data):
             replace = GetReplaceData(GetVersion(odl_data[data[3]][1]), odl_data)
             replacements[replace[0]] = replace
 
-    i = len(external) - 1
+    i     = len(external) - 1
+    j_old = i
 
     while i >= 0:
         if i in replacements:
             length = len(replacements[i][1])
-            if external[i - 1:i + length - 1] == replacements[i][1]:
-                external = external[:i - 1] + replacements[i][2] \
-                    + external[i + length - 1:]
-            elif external[i:i + length] == replacements[i][1]:
-                external = external[:i] + replacements[i][2] \
-                    + external[i + length:]
+
+            j = i
+            while j >= 0 and external[j:j + length] != replacements[i][1]:
+                j -= 1
+
+            if j >= 0 and j < j_old:
+                external = external[:j] + replacements[i][2] \
+                    + external[j + length:]
+                j_old = j
             else:
                 raise OdlExtractException("Cannot replace string \"" \
                                               + replacements[i][1] \
