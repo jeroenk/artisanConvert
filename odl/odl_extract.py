@@ -33,6 +33,9 @@ from pyth.plugins.plaintext.writer import PlaintextWriter
 
 from os.path  import join
 from StringIO import StringIO
+from uuid     import uuid4
+
+destroy_event_id = str(uuid4())
 
 class OdlExtractException(Exception):
     pass
@@ -352,7 +355,7 @@ def GetAssociations(odl_data, classes):
     return associations_used
 
 def GetEvents(odl_data):
-    events = {}
+    events = { destroy_event_id : "<<Destroy>>" }
 
     for ident in odl_data:
         if odl_data[ident][0] != "_Art1_Event":
@@ -363,7 +366,7 @@ def GetEvents(odl_data):
     return events
 
 def GetParameters(odl_data):
-    parameters = {}
+    parameters = { destroy_event_id : [] }
 
     for ident in odl_data:
         if odl_data[ident][0] != "_Art1_Event":
@@ -569,6 +572,10 @@ def FillTransitionDetails(odl_data, directory, transitions):
             event = "Exit/"
         elif etype == None:
             event = "None"
+        elif etype == 7: # Special <<Destroy>> signal
+            event    = "signal/<<Destroy>>"
+            event_id = destroy_event_id
+            action   = "delete self"
         elif etype == 8: # Apparently also represents the absence of a signal
             event = "None"
 
@@ -578,8 +585,10 @@ def FillTransitionDetails(odl_data, directory, transitions):
         if etype == 0 and trans_ident == ident:
             event = "signal_in/" + event[7:]
 
-        transitions[trans_ident].action   = GetExternal(version, odl_data, \
-                                                            directory)
+        if etype != 7:
+            action = GetExternal(version, odl_data, directory)
+
+        transitions[trans_ident].action   = action
         transitions[trans_ident].event    = event
         transitions[trans_ident].event_id = event_id
         transitions[trans_ident].guard    = guard
