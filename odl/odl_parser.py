@@ -31,6 +31,8 @@
 """Odl lexer and parser
 """
 
+from sys import stderr
+
 # Odl lexer
 
 import ply.lex as lex
@@ -77,8 +79,8 @@ def t_newline(t):
 def t_error(t):
     """Error handling rule
     """
-    print "Illegal character '" + t.value[0] \
-        + "' in odl file on line " + str(t.lexer.lineno)
+    stderr.write("Illegal character '" + t.value[0] \
+        + "' in odl file on line " + str(t.lexer.lineno) + "\n")
     t.lexer.skip(1)
 
 odl_lexer = lex.lex()
@@ -210,7 +212,7 @@ def p_error(p):
     """Print syntax error
     """
 
-    print "Syntax error at token " + p.type
+    stderr.write("Syntax error at token " + p.type + "\n")
     yacc.errok() # Discard the token and tell the parser it is okay
 
 odl_parser = yacc.yacc()
@@ -219,7 +221,7 @@ def OdlParseFile(directory):
     """Parse odl description of model
     """
 
-    f    = open(directory + "/Contents.odl", 'r')
+    f    = open(directory + "/Contents.odl", 'rb')
     data = f.read()
 
     # Replace (apparently meaningless) substring that affects lexing
