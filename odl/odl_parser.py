@@ -31,7 +31,9 @@
 """Odl lexer and parser
 """
 
-from sys import stderr
+from os.path import join
+from sys     import stderr
+from zipfile import ZipFile
 
 # Odl lexer
 
@@ -217,12 +219,17 @@ def p_error(p):
 
 odl_parser = yacc.yacc()
 
-def OdlParseFile(directory):
+def OdlParseFile(source):
     """Parse odl description of model
     """
 
-    f    = open(directory + "/Contents.odl", 'rb')
-    data = f.read()
+    contents = "Contents.odl"
+
+    if isinstance(source, ZipFile):
+        data = source.open(contents).read()
+    else:
+        f    = open(join(source, contents), 'rb')
+        data = f.read()
 
     # Replace (apparently meaningless) substring that affects lexing
     data = data.replace("\"\\\r\n    \"", "")

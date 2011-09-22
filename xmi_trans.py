@@ -38,6 +38,7 @@ from odl.odl_extract import GetModel, GetClasses, GetSuperClasses, \
 from cgi     import escape
 from uuid    import uuid4
 from sys     import argv, stderr
+from zipfile import is_zipfile, ZipFile
 
 classes       = None
 super_classes = None
@@ -533,18 +534,26 @@ def print_packages(packages, name):
         print_packages(package.children, new_name)
 
 def usage():
-    stderr.write("Usage: python <generate|list>" + argv[0] + \
-                     " <input directory> " + "[package path]\n")
+    stderr.write("Usage: " + argv[0] + \
+                     " <generate|list> <input> " + "[package path]\n")
     exit(1)
 
 def main():
-    if len(argv) < 3 or len(argv) > 4:
+    if len(argv) < 3 \
+            or len(argv) > 4 \
+            or (argv[1] == "list" and len(argv) != 3) \
+            or (argv[1] != "list" and argv[1] != "generate"):
         usage()
 
-    directory = argv[2]
+    file_name = argv[2]
+
+    if is_zipfile(file_name):
+        source = ZipFile(file_name)
+    else:
+        source = file_name
 
     stderr.write("Parsing input\n")
-    odl_data = OdlParseFile(directory)
+    odl_data = OdlParseFile(source)
 
     stderr.write("Finding relevant data\n")
 
@@ -558,8 +567,9 @@ def main():
         else:
             used_classes = None
 
-        generate(odl_data, used_classes, directory)
-    else:
-        usage()
+        generate(odl_data, used_classes, source)
+
+    if isinstance(source, ZipFile):
+        source.close()
 
 main()

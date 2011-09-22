@@ -34,6 +34,7 @@ from pyth.plugins.plaintext.writer import PlaintextWriter
 from os.path  import join
 from StringIO import StringIO
 from uuid     import uuid4
+from zipfile  import ZipFile
 
 destroy_event_id = str(uuid4())
 
@@ -217,7 +218,7 @@ def IsDefaultValue(version):
 
     return False
 
-def GetDefaultValue(ident, odl_data, directory):
+def GetDefaultValue(ident, odl_data, source):
     version = GetVersion(odl_data[ident][1])
 
     for data in version[2]:
@@ -227,11 +228,11 @@ def GetDefaultValue(ident, odl_data, directory):
             custom_version = GetVersion(odl_data[data[3]][1])
 
             if IsDefaultValue(custom_version):
-                return GetExternal(custom_version, odl_data, directory)
+                return GetExternal(custom_version, odl_data, source)
 
     return None
 
-def GetAttributes(odl_data, classes, directory):
+def GetAttributes(odl_data, classes, source):
     """Yields dictionary from class identifer to attribute data
     """
 
@@ -256,7 +257,7 @@ def GetAttributes(odl_data, classes, directory):
             data         = AttributeData()
             data.name    = names[attrib_id]
             data.ident   = attrib_id
-            data.default = GetDefaultValue(attrib_id, odl_data, directory)
+            data.default = GetDefaultValue(attrib_id, odl_data, source)
             attributes[ident].append(data)
 
     return attributes
@@ -491,7 +492,7 @@ def ReplaceTextNames(external, version, odl_data):
 
     return external
 
-def GetExternal(version, odl_data, directory):
+def GetExternal(version, odl_data, source):
     external = ""
 
     for item in version[2]:
@@ -499,11 +500,14 @@ def GetExternal(version, odl_data, directory):
                 and item[1] == "_Art1_RTF":
 
             if len(item[2]) == 2:
-                file_name = join(directory, item[2][0])
-                f = open(file_name)
-                data = f.read()
+                if isinstance(source, ZipFile):
+                    data = source.open(item[2][0]).read()
+                else:
+                    file_name = join(source, item[2][0])
+                    f = open(file_name, 'rb')
+                    data = f.read()
+                    f.close()
                 data = data.replace("\x0c", "")
-                f.close()
             elif len(item[2]) == 1:
                 data = item[2][0]
 
@@ -526,7 +530,7 @@ def GetType(version):
 
     return None
 
-def FillTransitionDetails(odl_data, directory, transitions):
+def FillTransitionDetails(odl_data, source, transitions):
     for ident in odl_data:
         if odl_data[ident][0] != "_Art1_EventActionBlock":
             continue
@@ -555,16 +559,16 @@ def FillTransitionDetails(odl_data, directory, transitions):
 
                 if etype == 2:
                     event = "Time/" + GetExternal(change_version, odl_data, \
-                                                      directory)
+                                                      source)
                 elif etype == 3:
                     event = "Change/" + GetExternal(change_version, odl_data, \
-                                                        directory)
+                                                        source)
 
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_EventActionBlock_To_GuardCondition" \
                     and item[2] == "_Art1_GuardCondition":
                 guard_version = GetVersion(odl_data[item[3]][1])
-                guard    = GetExternal(guard_version, odl_data, directory)
+                guard    = GetExternal(guard_version, odl_data, source)
                 guard_id = item[3]
 
         if trans_ident not in transitions:
@@ -590,7 +594,7 @@ def FillTransitionDetails(odl_data, directory, transitions):
             event = "signal_in/" + event[7:]
 
         if etype != 7:
-            action = GetExternal(version, odl_data, directory)
+            action = GetExternal(version, odl_data, source)
 
         transitions[trans_ident].action   = action
         transitions[trans_ident].event    = event
@@ -600,7 +604,7 @@ def FillTransitionDetails(odl_data, directory, transitions):
 
     return transitions
 
-def GetTransitions(odl_data, directory, states):
+def GetTransitions(odl_data, source, states):
     transitions = {}
 
     for ident in odl_data:
@@ -643,7 +647,7 @@ def GetTransitions(odl_data, directory, states):
                 and transitions[ident].target != None:
             used_transitions[ident] = transitions[ident]
 
-    return FillTransitionDetails(odl_data, directory, used_transitions).values()
+    return FillTransitionDetails(odl_data, source, used_transitions).values()
 
 def FindSubpackageOf(ident, path, odl_data):
     version = GetVersion(odl_data[ident][1])
