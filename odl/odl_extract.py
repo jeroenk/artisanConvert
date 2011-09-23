@@ -82,11 +82,18 @@ class AttributeData:
         self.name    = None
         self.ident   = None
         self.default = None
+        self.kind    = None
+        self.type    = None
+
+class EnumeratedTypeData:
+    def __init__(self):
+        self.name     = None
+        self.literals = []
 
 def GetVersion(data):
     version = None
 
-    for data_item in data:
+    for data_item in data[1]:
         if data_item[0] == "Version":
             if version == None:
                 version = data_item
@@ -138,7 +145,7 @@ def GetClasses(odl_data, used_classes):
             if used_classes != None and ident not in used_classes:
                 continue
 
-            classes[ident] = GetName(odl_data[ident][1])
+            classes[ident] = GetName(odl_data[ident])
 
     return classes
 
@@ -176,7 +183,7 @@ def GetSuperClasses(odl_data, classes):
     special = {}
 
     for ident in classes:
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
         general = GetGeneralizations(version, general, ident)
         special = GetSpecializations(version, special, ident)
 
@@ -184,7 +191,7 @@ def GetSuperClasses(odl_data, classes):
 
     for ident in odl_data:
         if odl_data[ident][0] == "_Art1_Generalization":
-            version = GetVersion(odl_data[ident][1])
+            version = GetVersion(odl_data[ident])
             special_gen = GetSpecialInGeneral(version, special_gen, ident)
 
     super_classes = {}
@@ -219,18 +226,28 @@ def IsDefaultValue(version):
     return False
 
 def GetDefaultValue(ident, odl_data, source):
-    version = GetVersion(odl_data[ident][1])
+    version = GetVersion(odl_data[ident])
 
     for data in version[2]:
         if data[0] == "Relationship" \
                 and data[1] == "_Art1_ModelObject_To_CustomPropertyTextObject" \
                 and data[2] == "_Art1_CustomPropertyTextObject":
-            custom_version = GetVersion(odl_data[data[3]][1])
+            custom_version = GetVersion(odl_data[data[3]])
 
             if IsDefaultValue(custom_version):
                 return GetExternal(custom_version, odl_data, source)
 
     return None
+
+def GetKindAndType(ident, odl_data):
+    version = GetVersion(odl_data[ident])
+
+    for data in version[2]:
+        if data[0] == "Relationship" \
+                and data[1] == "_Art1_TypedAttribute_To_DataType":
+            return (data[2], data[3])
+
+    return (None, None)
 
 def GetAttributes(odl_data, classes, source):
     """Yields dictionary from class identifer to attribute data
@@ -239,14 +256,14 @@ def GetAttributes(odl_data, classes, source):
     attrib_ids = {}
 
     for ident in classes:
-        version    = GetVersion(odl_data[ident][1])
+        version    = GetVersion(odl_data[ident])
         attrib_ids = GetAttributeIds(version, attrib_ids, ident)
 
     names = {}
 
     for ident in odl_data:
         if odl_data[ident][0] == "_Art1_Attribute":
-            names[ident] = GetName(odl_data[ident][1])
+            names[ident] = GetName(odl_data[ident])
 
     attributes = {}
 
@@ -258,6 +275,8 @@ def GetAttributes(odl_data, classes, source):
             data.name    = names[attrib_id]
             data.ident   = attrib_id
             data.default = GetDefaultValue(attrib_id, odl_data, source)
+            (data.kind, data.type) \
+                         = GetKindAndType(attrib_id, odl_data)
             attributes[ident].append(data)
 
     return attributes
@@ -291,7 +310,7 @@ def GetAssociations(odl_data, classes):
             continue
 
         association = AssociationData()
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
 
         for item in version[2]:
             if item[0] == "Attribute":
@@ -315,7 +334,7 @@ def GetAssociations(odl_data, classes):
         if odl_data[ident][0] != "_Art1_Role":
             continue
 
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
         name    = None
         index   = None
         assoc   = None
@@ -325,7 +344,7 @@ def GetAssociations(odl_data, classes):
                     and item[1] == "_Art1_Role_To_Association" \
                     and item[2] == "_Art1_Association":
                 assoc = item[3]
-                name  = GetName(odl_data[ident][1])
+                name  = GetName(odl_data[ident])
             elif item[0] == "Attribute" \
                     and item[1] == "_Art1_AssociationEnd":
                 index = int(item[2][0])
@@ -338,7 +357,7 @@ def GetAssociations(odl_data, classes):
         associations[assoc].role[index] = ident
 
     for ident in classes:
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
 
         for item in version[2]:
             if item[0] == "Relationship" \
@@ -362,7 +381,7 @@ def GetEvents(odl_data):
         if odl_data[ident][0] != "_Art1_Event":
             continue
 
-        events[ident] = GetName(odl_data[ident][1])
+        events[ident] = GetName(odl_data[ident])
 
     return events
 
@@ -373,14 +392,14 @@ def GetParameters(odl_data):
         if odl_data[ident][0] != "_Art1_Event":
             continue
 
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
         parameters[ident] = []
 
         for item in version[2]:
             if item[0] == "Relationship" \
                     and item[1] == "_Art1_Event_To_Parameter" \
                     and item[2] == "_Art1_Parameter":
-                parameters[ident].append(GetName(odl_data[item[3]][1]))
+                parameters[ident].append(GetName(odl_data[item[3]]))
 
     return parameters
 
@@ -391,9 +410,9 @@ def GetStates(odl_data, classes):
         if odl_data[ident][0] != "_Art1_State":
             continue
 
-        version   = GetVersion(odl_data[ident][1])
+        version   = GetVersion(odl_data[ident])
         data      = StateData()
-        data.name = GetName(odl_data[ident][1])
+        data.name = GetName(odl_data[ident])
 
         for item in version[2]:
             if item[0] == "Relationship" \
@@ -418,7 +437,7 @@ def GetStates(odl_data, classes):
             states[substate_id].superstate = ident
 
     for ident in states:
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
 
         for item in version[2]:
             if item[0] == "Relationship" \
@@ -451,7 +470,7 @@ def GetReplaceData(version, odl_data):
             name = name[:len(name) - 1]
         elif data[0] == "Relationship" \
                 and data[1] == "_Art1_ModelObjectToken_To_ModelObject":
-            obj = GetName(odl_data[data[3]][1])
+            obj = GetName(odl_data[data[3]])
 
     return (start, name, obj)
 
@@ -463,7 +482,7 @@ def ReplaceTextNames(external, version, odl_data):
         if data[0] == "Relationship" \
                 and data[1] == "_Art1_TextObject_To_ModelObjectToken" \
                 and data[2] == "_Art1_ModelObjectToken":
-            replace = GetReplaceData(GetVersion(odl_data[data[3]][1]), odl_data)
+            replace = GetReplaceData(GetVersion(odl_data[data[3]]), odl_data)
             replacements[replace[0]] = replace
 
     i     = len(external) - 1
@@ -522,7 +541,7 @@ def GetExternal(version, odl_data, source):
 
     return ReplaceTextNames(external, version, odl_data)
 
-def GetType(version):
+def GetTypeEvent(version):
     for item in version[2]:
         if item[0] == "Attribute" \
                 and item[1] == "_Art1_EventType":
@@ -536,8 +555,8 @@ def FillTransitionDetails(odl_data, source, transitions):
             continue
 
         trans_ident = ident
-        version     = GetVersion(odl_data[ident][1])
-        etype       = GetType(version)
+        version     = GetVersion(odl_data[ident])
+        etype       = GetTypeEvent(version)
         event       = None
         event_id    = None
 
@@ -550,12 +569,12 @@ def FillTransitionDetails(odl_data, source, transitions):
                     and item[1] == "_Art1_EventActionBlock_To_SignalEvent" \
                     and item[2] == "_Art1_Event" \
                     and etype == 0:
-                event    = "signal/" + GetName(odl_data[item[3]][1])
+                event    = "signal/" + GetName(odl_data[item[3]])
                 event_id = item[3]
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_EventActionBlock_To_ChangeEvent" \
                     and item[2] == "_Art1_ChangeEvent":
-                change_version = GetVersion(odl_data[item[3]][1])
+                change_version = GetVersion(odl_data[item[3]])
 
                 if etype == 2:
                     event = "Time/" + GetExternal(change_version, odl_data, \
@@ -567,7 +586,7 @@ def FillTransitionDetails(odl_data, source, transitions):
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_EventActionBlock_To_GuardCondition" \
                     and item[2] == "_Art1_GuardCondition":
-                guard_version = GetVersion(odl_data[item[3]][1])
+                guard_version = GetVersion(odl_data[item[3]])
                 guard    = GetExternal(guard_version, odl_data, source)
                 guard_id = item[3]
 
@@ -611,7 +630,7 @@ def GetTransitions(odl_data, source, states):
         if odl_data[ident][0] != "_Art1_Transition":
             continue
 
-        version    = GetVersion(odl_data[ident][1])
+        version    = GetVersion(odl_data[ident])
         data       = TransitionData()
         data.ident = ident
 
@@ -624,7 +643,7 @@ def GetTransitions(odl_data, source, states):
         transitions[ident] = data
 
     for ident in states:
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
 
         for item in version[2]:
             if item[0] == "Relationship" \
@@ -649,14 +668,45 @@ def GetTransitions(odl_data, source, states):
 
     return FillTransitionDetails(odl_data, source, used_transitions).values()
 
+def GetBasicTypes(odl_data):
+    basic_types = {}
+
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_BasicType":
+            continue
+
+        basic_types[ident] = GetName(odl_data[ident])
+
+    return basic_types
+
+def GetEnumeratedTypes(odl_data):
+    enumerated_types = {}
+
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Typedef":
+            continue
+
+        print ident
+        version   = GetVersion(odl_data[ident])
+        data      = EnumeratedTypeData()
+        data.name = GetName(odl_data[ident])
+
+        for item in version[2]:
+            if item[0] == "Relationship" \
+                    and item[1] == "_Art1_Enumeration_To_EnumerationLiteral" \
+                    and item[2] == "_Art1_EnumerationLiteral":
+                data.literals.append(GetName(odl_data[item[3]]))
+
+    return enumerated_types
+
 def FindSubpackageOf(ident, path, odl_data):
-    version = GetVersion(odl_data[ident][1])
+    version = GetVersion(odl_data[ident])
 
     for item in version[2]:
         if item[0] == "Relationship" \
                 and item[1] == "_Art1_Package_To_PackageItem" \
                 and item[2] == "_Art1_Package" \
-                and GetName(odl_data[item[3]][1]) == path[0]:
+                and GetName(odl_data[item[3]]) == path[0]:
             if len(path) == 1:
                 return item[3]
             else:
@@ -669,7 +719,7 @@ def FindPackage(path, odl_data):
         if odl_data[ident][0] != "_Art1_Package":
             continue
 
-        if GetName(odl_data[ident][1]) == path[0]:
+        if GetName(odl_data[ident]) == path[0]:
             if len(path) == 1:
                 return ident
             else:
@@ -678,7 +728,7 @@ def FindPackage(path, odl_data):
     raise Exception("Package " + path[0] + " not found")
 
 def FindAllSubpackages(ident, odl_data):
-    version = GetVersion(odl_data[ident][1])
+    version = GetVersion(odl_data[ident])
 
     subpackages = [ident]
 
@@ -694,7 +744,7 @@ def FindClassesInPackages(packages, odl_data):
     used_classes = []
 
     for ident in packages:
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
 
         for item in version[2]:
             if item[0] == "Relationship" \
@@ -720,10 +770,10 @@ def GetPackageHierarchy(odl_data):
             continue
 
         package = PackageData()
-        package.name  = GetNamePlain(odl_data[ident][1])
+        package.name  = GetNamePlain(odl_data[ident])
         package.ident = ident
 
-        version = GetVersion(odl_data[ident][1])
+        version = GetVersion(odl_data[ident])
 
         for item in version[2]:
             if item[0] == "Relationship" \

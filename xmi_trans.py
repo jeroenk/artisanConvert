@@ -33,7 +33,8 @@
 from odl.odl_parser  import OdlParseFile
 from odl.odl_extract import GetModel, GetClasses, GetSuperClasses, \
     GetAttributes, GetAssociations, GetEvents, GetParameters, GetStates, \
-    GetTransitions, FindPackageClasses, GetPackageHierarchy
+    GetTransitions, FindPackageClasses, GetPackageHierarchy, GetBasicTypes, \
+    GetEnumeratedTypes
 
 from cgi     import escape
 from uuid    import uuid4
@@ -47,6 +48,8 @@ associations  = None
 parameters    = None
 states        = None
 transitions   = None
+basic_types   = None
+enum_types    = None
 
 signals = {}
 times   = {}
@@ -89,13 +92,17 @@ def PrintSuperClasses(ident):
 def PrintAttributes(class_attributes):
     for attribute in class_attributes:
         if attribute.name[0] == "/":
-            attribute_type = "_brobQF6WEd-1BtN3LP_f7A"
+            attribute_type = "brobQF6WEd-1BtN3LP_f7A"
+        elif attribute.type != None:
+            attribute_type = attribute.type
         else:
+            stderr.write("Attribute " + attribute.name + " does not have a " \
+                             + "type; defaulting to UnknownType\n")
             attribute_type = "_cD-CwF6WEd-1BtN3LP_f7A"
 
         string = "    <ownedAttribute xmi:id=\"_" + attribute.ident + "\" " \
             + "name=\"" + attribute.name + "\" " \
-            + "type=\"" + attribute_type + "\" " \
+            + "type=\"_" + attribute_type + "\" " \
             + "isUnique=\"false\""
 
         if attribute.default == None:
@@ -493,16 +500,21 @@ def PrintChangeEvents():
 
         count += 1
 
+def PrintBasicTypes():
+    for ident in basic_types:
+        print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
+            + "xmi:id=\"_" + ident + "\" name=\"" + basic_types[ident] +"\"/>"
+
 def PrintFooter():
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
         + "xmi:id=\"_brobQF6WEd-1BtN3LP_f7A\" name=\"DerivedAttribute\"/>"
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
-        + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"Integer\"/>"
+        + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"UnknownType\"/>"
     print "</uml:Model>"
 
 def generate(odl_data, used_classes, directory):
     global classes, super_classes, attributes, associations, parameters, \
-        states, transitions
+        states, transitions, basic_types, enum_types
 
     classes       = GetClasses(odl_data, used_classes)
     super_classes = GetSuperClasses(odl_data, classes)
@@ -511,6 +523,8 @@ def generate(odl_data, used_classes, directory):
     parameters    = GetParameters(odl_data)
     states        = GetStates(odl_data, classes)
     transitions   = GetTransitions(odl_data, directory, states)
+    basic_types   = GetBasicTypes(odl_data)
+    enum_types    = GetEnumeratedTypes(odl_data)
 
     stderr.write("Writing output\n")
     GatherSignals(odl_data)
@@ -523,6 +537,9 @@ def generate(odl_data, used_classes, directory):
     PrintSignalEvents()
     PrintTimeEvents()
     PrintChangeEvents()
+    if len(enum_types) == 0:
+        stderr.write("Ignoring enumerated types (Not implemented)\n")
+    PrintBasicTypes()
     PrintFooter()
     stderr.write("Done!\n")
 
