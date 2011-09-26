@@ -91,19 +91,20 @@ def PrintSuperClasses(ident):
 
 def PrintAttributes(class_attributes):
     for attribute in class_attributes:
-        if attribute.name[0] == "/":
-            attribute_type = "brobQF6WEd-1BtN3LP_f7A"
-        elif attribute.type != None:
+        if attribute.type != None:
             attribute_type = attribute.type
         else:
             stderr.write("Attribute " + attribute.name + " does not have a " \
-                             + "type; defaulting to UnknownType\n")
+                             + "type; defaulting to UndefinedType\n")
             attribute_type = "_cD-CwF6WEd-1BtN3LP_f7A"
 
         string = "    <ownedAttribute xmi:id=\"_" + attribute.ident + "\" " \
             + "name=\"" + attribute.name + "\" " \
             + "type=\"_" + attribute_type + "\" " \
             + "isUnique=\"false\""
+
+        if attribute.name[0] == "/":
+            string += " isDerived=\"true\""
 
         if attribute.default == None:
             string += "/>"
@@ -500,16 +501,26 @@ def PrintChangeEvents():
 
         count += 1
 
+def PrintEnumTypes():
+    for ident in enum_types:
+        print "  <packagedElement xmi:type=\"uml:Enumeration\" " \
+            + "xmi:id=\"_" + ident + "\" " \
+            + "name=\"" + enum_types[ident].name + "\">"
+
+        for literal in enum_types[ident].literals:
+            print "    <ownedLiteral xmi:id=\"_" + literal.ident + "\" " \
+                + "name=\"" + literal.name + "\"/>"
+
+        print "  </packagedElement>"
+
 def PrintBasicTypes():
     for ident in basic_types:
         print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
-            + "xmi:id=\"_" + ident + "\" name=\"" + basic_types[ident] +"\"/>"
+            + "xmi:id=\"_" + ident + "\" name=\"" + basic_types[ident] + "\"/>"
 
 def PrintFooter():
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
-        + "xmi:id=\"_brobQF6WEd-1BtN3LP_f7A\" name=\"DerivedAttribute\"/>"
-    print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
-        + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"UnknownType\"/>"
+        + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"UndefinedType\"/>"
     print "</uml:Model>"
 
 def generate(odl_data, used_classes, directory):
@@ -537,8 +548,7 @@ def generate(odl_data, used_classes, directory):
     PrintSignalEvents()
     PrintTimeEvents()
     PrintChangeEvents()
-    if len(enum_types) == 0:
-        stderr.write("Ignoring enumerated types (Not implemented)\n")
+    PrintEnumTypes()
     PrintBasicTypes()
     PrintFooter()
     stderr.write("Done!\n")

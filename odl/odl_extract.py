@@ -90,6 +90,11 @@ class EnumeratedTypeData:
         self.name     = None
         self.literals = []
 
+class EnumeratedLiteralData:
+    def __init__(self):
+        self.name  = None
+        self.ident = None
+
 def GetVersion(data):
     version = None
 
@@ -686,7 +691,6 @@ def GetEnumeratedTypes(odl_data):
         if odl_data[ident][0] != "_Art1_Typedef":
             continue
 
-        print ident
         version   = GetVersion(odl_data[ident])
         data      = EnumeratedTypeData()
         data.name = GetName(odl_data[ident])
@@ -695,7 +699,12 @@ def GetEnumeratedTypes(odl_data):
             if item[0] == "Relationship" \
                     and item[1] == "_Art1_Enumeration_To_EnumerationLiteral" \
                     and item[2] == "_Art1_EnumerationLiteral":
-                data.literals.append(GetName(odl_data[item[3]]))
+                literal = EnumeratedLiteralData()
+                literal.name  = GetName(odl_data[item[3]])
+                literal.ident = item[3]
+                data.literals.append(literal)
+
+        enumerated_types[ident] = data
 
     return enumerated_types
 
