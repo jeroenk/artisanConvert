@@ -96,7 +96,7 @@ def PrintAttributes(class_attributes):
         else:
             stderr.write("Attribute " + attribute.name + " does not have a " \
                              + "type; defaulting to UndefinedType\n")
-            attribute_type = "_cD-CwF6WEd-1BtN3LP_f7A"
+            attribute_type = "cD-CwF6WEd-1BtN3LP_f7A"
 
         string = "    <ownedAttribute xmi:id=\"_" + attribute.ident + "\" " \
             + "name=\"" + attribute.name + "\" " \
@@ -155,18 +155,16 @@ def PrintAttributeAssociations(ident):
 
 def PrintParameters(event_parameters):
     for parameter in event_parameters:
+        if parameter.type != None:
+            parameter_type = parameter.type
+        else:
+            stderr.write("Parameter " + parameter.name + " does not have a " \
+                             + "type; defaulting to UndefinedType\n")
+            parameter_type = "cD-CwF6WEd-1BtN3LP_f7A"
+
         print "      <ownedParameter xmi:id=\"_" + str(uuid4()) + "\" " \
-            + "name=\"" + escape(parameter, True) + "\" " \
-            + "type=\"_cD-CwF6WEd-1BtN3LP_f7A\">"
-        print "        <upperValue xmi:type=\"uml:LiteralUnlimitedNatural\" " \
-            + "xmi:id=\"_" + str(uuid4()) + "\"/>"
-        print "        <lowerValue xmi:type=\"uml:LiteralInteger\" " \
-            + "xmi:id=\"_" + str(uuid4()) + "\"/>"
-        print "        <defaultValue xmi:type=\"uml:LiteralString\" " \
-            + "xmi:id=\"" + str(uuid4()) + "\">"
-        print "          <value xsi:nil=\"true\"/>"
-        print "        </defaultValue>"
-        print "      </ownedParameter>"
+            + "name=\"" + escape(parameter.name, True) + "\" " \
+            + "type=\"_" + parameter_type + "\"/>"
 
 def PrintOwnedReceptions(ident):
     events = []

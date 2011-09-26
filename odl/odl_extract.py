@@ -86,6 +86,12 @@ class AttributeData:
         self.kind    = None
         self.type    = None
 
+class ParameterData:
+    def __init__(self):
+        self.name = None
+        self.kind = None
+        self.type = None
+
 class EnumeratedTypeData:
     def __init__(self):
         self.name     = None
@@ -259,9 +265,10 @@ def GetKindAndType(ident, odl_data):
     version = GetVersion(odl_data[ident])
 
     for data in version[2]:
-        if data[0] == "Relationship" \
-                and data[1] == "_Art1_TypedAttribute_To_DataType":
-            return (data[2], data[3])
+        if data[0] == "Relationship":
+            if data[1] == "_Art1_TypedAttribute_To_DataType" \
+                    or data[1] == "_Art1_TypedParameter_To_DataType":
+                return (data[2], data[3])
 
     return (None, None)
 
@@ -415,7 +422,11 @@ def GetParameters(odl_data):
             if item[0] == "Relationship" \
                     and item[1] == "_Art1_Event_To_Parameter" \
                     and item[2] == "_Art1_Parameter":
-                parameters[ident].append(GetName(odl_data[item[3]]))
+                parameter = ParameterData()
+                parameter.name = GetName(odl_data[item[3]])
+                (parameter.kind, parameter.type) \
+                               = GetKindAndType(item[3], odl_data)
+                parameters[ident].append(parameter)
 
     return parameters
 
