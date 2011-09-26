@@ -33,6 +33,7 @@ from pyth.plugins.plaintext.writer import PlaintextWriter
 
 from os.path  import join
 from StringIO import StringIO
+from sys      import stderr
 from uuid     import uuid4
 from zipfile  import ZipFile
 
@@ -135,6 +136,16 @@ def GetName(data):
 def GetNamePlain(data):
     version = GetVersion(data)
     return version[1][6:]
+
+def GetConstruction(data):
+    version = GetVersion(data)
+
+    for item in version[2]:
+        if item[0] == "Attribute" \
+                and item[1] == "_Art1_Construction":
+            return item[2][0]
+
+    raise OdlExtractException("Construction type not found")
 
 def GetClasses(odl_data, used_classes):
     """Yields dictionary from class identifer to class name
@@ -691,6 +702,11 @@ def GetEnumeratedTypes(odl_data):
         if odl_data[ident][0] != "_Art1_Typedef":
             continue
 
+        construction = GetConstruction(odl_data[ident])
+
+        if construction != "0":
+            continue
+
         version   = GetVersion(odl_data[ident])
         data      = EnumeratedTypeData()
         data.name = GetName(odl_data[ident])
@@ -707,6 +723,34 @@ def GetEnumeratedTypes(odl_data):
         enumerated_types[ident] = data
 
     return enumerated_types
+
+def GetSequenceTypes(odl_data):
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Typedef":
+            continue
+
+        construction = GetConstruction(odl_data[ident])
+
+        if construction != "2":
+            continue
+
+        name = GetName(odl_data[ident])
+
+        stderr.write("Unhandled sequence type " + name + " found\n")
+
+def GetArrayTypes(odl_data):
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Typedef":
+            continue
+
+        construction = GetConstruction(odl_data[ident])
+
+        if construction != "3":
+            continue
+
+        name = GetName(odl_data[ident])
+
+        stderr.write("Unhandled array type " + name + " found\n")
 
 def FindSubpackageOf(ident, path, odl_data):
     version = GetVersion(odl_data[ident])
