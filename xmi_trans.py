@@ -562,7 +562,7 @@ def print_packages(packages, name):
 
 def usage():
     stderr.write("Usage: " + argv[0] + \
-                     " <generate|list> <input> " + "[package path]\n")
+                     " <generate|list> <input> " + "[package]\n")
     exit(1)
 
 def main():
