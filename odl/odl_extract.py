@@ -499,6 +499,12 @@ def GetReplaceData(version, odl_data):
                 and data[1] == "_Art1_ModelObjectToken_To_ModelObject":
             obj = GetName(odl_data[data[3]])
 
+    # In some sporadic cases there is no link back to a model object.
+    # Use the token name itself with appropriate replacements
+    if obj == None:
+        obj = name.replace(' ', '_') \
+            .replace('-', '_').replace('&', "and")
+
     return (start, name, obj)
 
 def ReplaceTextNames(external, version, odl_data):
