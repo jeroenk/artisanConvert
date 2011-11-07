@@ -97,7 +97,7 @@ def PrintAttributes(class_attributes):
             attribute_type = "cD-CwF6WEd-1BtN3LP_f7A"
 
         string = "    <ownedAttribute xmi:id=\"_" + attribute.ident + "\" " \
-            + "name=\"" + attribute.name + "\" " \
+            + "name=\"" + escape(attribute.name, True) + "\" " \
             + "type=\"_" + attribute_type + "\" " \
             + "isUnique=\"false\""
 
@@ -115,7 +115,7 @@ def PrintAttributes(class_attributes):
         print "      <defaultValue xmi:type=\"uml:OpaqueExpression\" " \
             + "xmi:id=\"_" + str(uuid4()) + "\">"
         print "        <language>xuml</language>"
-        print "        <body>" + attribute.default + "</body>"
+        print "        <body>" + escape(attribute.default, True) + "</body>"
         print "      </defaultValue>"
         print "    </ownedAttribute>"
 
@@ -468,7 +468,7 @@ def PrintTimeEvents():
 
         print "      <expr xmi:type=\"uml:LiteralString\" " \
             + "xmi:id=\"_" + when_id +"\" " \
-            + "value=\"after( " + transition.event[5:].strip("\n\r") + " )\"/>"
+            + "value=\"after( " + escape(transition.event[5:], True) + " )\"/>"
 
         print "    </when>"
 
@@ -499,18 +499,19 @@ def PrintEnumTypes():
     for ident in enum_types:
         print "  <packagedElement xmi:type=\"uml:Enumeration\" " \
             + "xmi:id=\"_" + ident + "\" " \
-            + "name=\"" + enum_types[ident].name + "\">"
+            + "name=\"" + escape(enum_types[ident].name, True) + "\">"
 
         for literal in enum_types[ident].literals:
             print "    <ownedLiteral xmi:id=\"_" + literal.ident + "\" " \
-                + "name=\"" + literal.name + "\"/>"
+                + "name=\"" + escape(literal.name, True) + "\"/>"
 
         print "  </packagedElement>"
 
 def PrintBasicTypes():
     for ident in basic_types:
         print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
-            + "xmi:id=\"_" + ident + "\" name=\"" + basic_types[ident] + "\"/>"
+            + "xmi:id=\"_" + ident + "\" name=\"" \
+            + escape(basic_types[ident], True) + "\"/>"
 
 def PrintFooter():
     print "  <packagedElement xmi:type=\"uml:PrimitiveType\" " \
