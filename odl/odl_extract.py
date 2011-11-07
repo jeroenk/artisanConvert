@@ -300,6 +300,13 @@ def GetAttributes(odl_data, classes, source):
             data.default = GetDefaultValue(attrib_id, odl_data, source)
             (data.kind, data.type) \
                          = GetKindAndType(attrib_id, odl_data)
+
+            if data.type == None:
+                stderr.write("Warning: attribute \"" \
+                                 + GetNamePlain(odl_data[attrib_id]) + "\" " \
+                                 + "of \"" + GetNamePlain(odl_data[ident]) \
+                                 + "\" does not have type\n")
+
             attributes[ident].append(data)
 
     return attributes
@@ -426,6 +433,13 @@ def GetParameters(odl_data):
                 parameter.name = GetName(odl_data[item[3]])
                 (parameter.kind, parameter.type) \
                                = GetKindAndType(item[3], odl_data)
+
+                if parameter.type == None:
+                    stderr.write("Warning: parameter \"" \
+                                     + GetNamePlain(odl_data[item[3]]) + "\" " \
+                                     + "of \"" + GetNamePlain(odl_data[ident]) \
+                                     + "\" does not have type\n")
+
                 parameters[ident].append(parameter)
 
     return parameters
@@ -499,12 +513,6 @@ def GetReplaceData(version, odl_data):
                 and data[1] == "_Art1_ModelObjectToken_To_ModelObject":
             obj = GetName(odl_data[data[3]])
 
-    # In some sporadic cases there is no link back to a model object.
-    # Use the token name itself with appropriate replacements
-    if obj == None:
-        obj = name.replace(' ', '_') \
-            .replace('-', '_').replace('&', "and")
-
     return (start, name, obj)
 
 def ReplaceTextNames(external, version, odl_data):
@@ -522,16 +530,27 @@ def ReplaceTextNames(external, version, odl_data):
 
     while i >= 0:
         if i in replacements:
-            length = len(replacements[i][1])
+            length  = len(replacements[i][1])
+            replace = replacements[i][2]
+
+            # In some sporadic cases there is no link back to a model object.
+            # Use the token name itself with appropriate replacements
+            if replace == None:
+                name = replacements[i][1]
+                stderr.write("Warning: token \"" + name + "\" not linked at " \
+                                 + "position " + str(i) + " in:\n\n" \
+                                 + old_external + "\n")
+
+                replace = name.replace(' ', '_').replace('-', '_'). \
+                    replace('&', "and")
 
             if external[i:i + length] == replacements[i][1]:
-                external = external[:i] + replacements[i][2] \
-                    + external[i + length:]
+                external = external[:i] + replace + external[i + length:]
             else:
-                raise OdlExtractException("Cannot replace string \"" \
+                raise OdlExtractException("Cannot replace token \"" \
                                               + replacements[i][1] \
                                               + "\" at position " \
-                                              + str(i) + " in:\n" \
+                                              + str(i) + " in:\n\n" \
                                               + old_external)
 
         i -= 1
@@ -747,7 +766,7 @@ def GetSequenceTypes(odl_data):
 
         name = GetName(odl_data[ident])
 
-        stderr.write("Unhandled sequence type " + name + " found\n")
+        stderr.write("Warning: sequence type \"" + name + "\" unhandled\n")
 
 def GetArrayTypes(odl_data):
     for ident in odl_data:
@@ -761,7 +780,7 @@ def GetArrayTypes(odl_data):
 
         name = GetName(odl_data[ident])
 
-        stderr.write("Unhandled array type " + name + " found\n")
+        stderr.write("Warning: array type " + name + " unhandled\n")
 
 def FindSubpackageOf(ident, path, odl_data):
     version = GetVersion(odl_data[ident])

@@ -81,7 +81,7 @@ def t_newline(t):
 def t_error(t):
     """Error handling rule
     """
-    stderr.write("Illegal character '" + t.value[0] \
+    stderr.write("Warning: illegal character '" + t.value[0] \
         + "' in odl file on line " + str(t.lexer.lineno) + "\n")
     t.lexer.skip(1)
 
@@ -214,7 +214,7 @@ def p_error(p):
     """Print syntax error
     """
 
-    stderr.write("Syntax error at token " + p.type + "\n")
+    stderr.write("Warning: syntax error at token " + p.type + "\n")
     yacc.errok() # Discard the token and tell the parser it is okay
 
 odl_parser = yacc.yacc()

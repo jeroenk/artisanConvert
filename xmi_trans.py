@@ -94,8 +94,6 @@ def PrintAttributes(class_attributes):
         if attribute.type != None:
             attribute_type = attribute.type
         else:
-            stderr.write("Attribute " + attribute.name + " does not have a " \
-                             + "type; defaulting to UndefinedType\n")
             attribute_type = "cD-CwF6WEd-1BtN3LP_f7A"
 
         string = "    <ownedAttribute xmi:id=\"_" + attribute.ident + "\" " \
@@ -158,8 +156,6 @@ def PrintParameters(event_parameters):
         if parameter.type != None:
             parameter_type = parameter.type
         else:
-            stderr.write("Parameter " + parameter.name + " does not have a " \
-                             + "type; defaulting to UndefinedType\n")
             parameter_type = "cD-CwF6WEd-1BtN3LP_f7A"
 
         print "      <ownedParameter xmi:id=\"_" + str(uuid4()) + "\" " \
