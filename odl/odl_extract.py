@@ -60,6 +60,7 @@ class TransitionData:
         self.action   = None
         self.guard    = None
         self.guard_id = None
+        self.class_id = None
 
 class AssociationData:
     def __init__(self):
@@ -515,7 +516,7 @@ def GetReplaceData(version, odl_data):
 
     return (start, name, obj)
 
-def ReplaceTextNames(external, version, odl_data):
+def ReplaceTextNames(external, version, odl_data, class_id):
     old_external = external
     replacements = {}
 
@@ -537,8 +538,9 @@ def ReplaceTextNames(external, version, odl_data):
             # Use the token name itself with appropriate replacements
             if replace == None:
                 name = replacements[i][1]
-                stderr.write("Warning: token \"" + name + "\" not linked at " \
-                                 + "position " + str(i) + " in:\n\n" \
+                stderr.write("Warning: In \"" + GetName(odl_data[class_id]) \
+                                 + "\", token \"" + name + "\" not linked at " \
+                                 + "position " + str(i) + " of:\n\n" \
                                  + old_external + "\n")
 
                 replace = name.replace(' ', '_').replace('-', '_'). \
@@ -557,7 +559,7 @@ def ReplaceTextNames(external, version, odl_data):
 
     return external
 
-def GetExternal(version, odl_data, source):
+def GetExternal(version, odl_data, source, class_id):
     external = ""
 
     for item in version[2]:
@@ -585,7 +587,7 @@ def GetExternal(version, odl_data, source):
             external = PlaintextWriter.write(doc).getvalue()
             external = external.replace("\n\n", "\n")
 
-    return ReplaceTextNames(external, version, odl_data)
+    return ReplaceTextNames(external, version, odl_data, class_id)
 
 def GetTypeEvent(version):
     for item in version[2]:
@@ -611,7 +613,15 @@ def FillTransitionDetails(odl_data, source, transitions):
                     and item[1] == "_Art1_EventActionBlock_To_Transition" \
                     and item[2] == "_Art1_Transition":
                 trans_ident = item[3]
-            elif item[0] == "Relationship" \
+
+        if trans_ident not in transitions:
+            continue
+
+        # Needed for warning handling in GetExternal
+        class_id = transitions[trans_ident].class_id
+
+        for item in version[2]:
+            if item[0] == "Relationship" \
                     and item[1] == "_Art1_EventActionBlock_To_SignalEvent" \
                     and item[2] == "_Art1_Event" \
                     and etype == 0:
@@ -624,20 +634,18 @@ def FillTransitionDetails(odl_data, source, transitions):
 
                 if etype == 2:
                     event = "Time/" + GetExternal(change_version, odl_data, \
-                                                      source)
+                                                      source, class_id)
                 elif etype == 3:
                     event = "Change/" + GetExternal(change_version, odl_data, \
-                                                        source)
+                                                        source, class_id)
 
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_EventActionBlock_To_GuardCondition" \
                     and item[2] == "_Art1_GuardCondition":
                 guard_version = GetVersion(odl_data[item[3]])
-                guard    = GetExternal(guard_version, odl_data, source)
+                guard    = GetExternal(guard_version, odl_data, source, \
+                                           class_id)
                 guard_id = item[3]
-
-        if trans_ident not in transitions:
-            continue
 
         if etype == 4:
             event = "Entry/"
@@ -659,7 +667,7 @@ def FillTransitionDetails(odl_data, source, transitions):
             event = "signal_in/" + event[7:]
 
         if etype != 7:
-            action = GetExternal(version, odl_data, source)
+            action = GetExternal(version, odl_data, source, class_id)
 
         transitions[trans_ident].action   = action
         transitions[trans_ident].event    = event
@@ -695,7 +703,8 @@ def GetTransitions(odl_data, source, states):
             if item[0] == "Relationship" \
                     and item[1] == "_Art1_StartState_To_TransitionStart" \
                     and item[2] == "_Art1_Transition":
-                transitions[item[3]].source = ident
+                transitions[item[3]].source   = ident
+                transitions[item[3]].class_id = states[ident].class_id
             elif item[0] == "Relationship" \
                     and item[1] == "_Art1_State_To_EventActionBlock" \
                     and item[2] == "_Art1_EventActionBlock":
@@ -703,6 +712,7 @@ def GetTransitions(odl_data, source, states):
                 data.ident    = item[3]
                 data.source   = ident
                 data.target   = ident
+                data.class_id = states[ident].class_id
                 transitions[item[3]] = data
 
     used_transitions = {}
