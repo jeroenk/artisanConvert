@@ -764,6 +764,20 @@ def GetEnumeratedTypes(odl_data):
 
     return enumerated_types
 
+def GetAliasTypes(odl_data):
+    for ident in odl_data:
+        if odl_data[ident][0] != "_Art1_Typedef":
+            continue
+
+        construction = GetConstruction(odl_data[ident])
+
+        if construction != "1":
+            continue
+
+        name = GetName(odl_data[ident])
+
+        stderr.write("Warning: alias type \"" + name + "\" unhandled\n")
+
 def GetSequenceTypes(odl_data):
     for ident in odl_data:
         if odl_data[ident][0] != "_Art1_Typedef":

@@ -34,7 +34,7 @@ from odl.odl_parser  import OdlParseFile
 from odl.odl_extract import GetModel, GetClasses, GetSuperClasses, \
     GetAttributes, GetAssociations, GetEvents, GetParameters, GetStates, \
     GetTransitions, FindPackageClasses, GetPackageHierarchy, GetBasicTypes, \
-    GetEnumeratedTypes, GetSequenceTypes, GetArrayTypes
+    GetEnumeratedTypes, GetAliasTypes, GetSequenceTypes, GetArrayTypes
 
 from cgi     import escape
 from uuid    import uuid4
@@ -531,6 +531,7 @@ def generate(odl_data, used_classes, directory):
     transitions   = GetTransitions(odl_data, directory, states)
     basic_types   = GetBasicTypes(odl_data)
     enum_types    = GetEnumeratedTypes(odl_data)
+    GetAliasTypes(odl_data)
     GetSequenceTypes(odl_data)
     GetArrayTypes(odl_data)
 
