@@ -33,8 +33,9 @@
 from odl.odl_parser  import OdlParseFile
 from odl.odl_extract import GetModel, GetClasses, GetSuperClasses, \
     GetAttributes, GetAssociations, GetEvents, GetParameters, GetStates, \
-    GetTransitions, FindPackageClasses, GetPackageHierarchy, GetBasicTypes, \
-    GetEnumeratedTypes, GetAliasTypes, GetSequenceTypes, GetArrayTypes
+    GetTransitions, GetBasicTypes, GetEnumeratedTypes, GetAliasTypes, \
+    GetSequenceTypes, GetArrayTypes, FindPackageClasses, FindPackageEvents, \
+    GetPackageHierarchy
 
 from cgi     import escape
 from uuid    import uuid4
@@ -55,11 +56,11 @@ signals = {}
 times   = {}
 changes = {}
 
-def GatherSignals(odl_data):
-    events = GetEvents(odl_data)
+def GatherSignals(odl_data, used_events):
+    events = GetEvents(odl_data, used_events)
 
     for event in events:
-        signals[event] = [events[event], str(uuid4()), False]
+        signals[event] = (events[event], str(uuid4()))
 
 def GatherTimesAndChanges():
     for transition in transitions:
@@ -176,12 +177,19 @@ def PrintOwnedReceptions(ident):
         if transition.event_id in events:
             continue
 
+        if transition.event_id not in signals:
+            if transition.event[:7] == "signal/":
+                event_name = transition.event[7:]
+            elif transition.event[:10] == "signal_in/":
+                event_name = transition.event[10:]
+
+            stderr.write("Waring: event " + event_name + " not found\n")
+            signals[transition.event_id] = (event_name, str(uuid4()))
+
         events.append(transition.event_id)
         string = "    <ownedReception xmi:id=\"_" + str(uuid4()) + "\" " \
             + "name=\"Reception_" + str(len(events) - 1) + "\" " \
             + "signal=\"_" + signals[transition.event_id][1] + "\""
-
-        signals[transition.event_id][2] = True
 
         if parameters[transition.event_id] == []:
             string += "/>"
@@ -431,9 +439,6 @@ def PrintAssociations():
 
 def PrintSignals():
     for signal in signals:
-        if not signals[signal][2]:
-            continue
-
         print "  <packagedElement xmi:type=\"uml:Signal\" " \
             + "xmi:id=\"_" + signals[signal][1] + "\" " \
             + "name=\"" + escape(signals[signal][0], True) + "\"/>"
@@ -442,9 +447,6 @@ def PrintSignalEvents():
     count = 0
 
     for signal in signals:
-        if not signals[signal][2]:
-            continue
-
         print "  <packagedElement xmi:type=\"uml:SignalEvent\" " \
             + "xmi:id=\"_" + signal + "\" " \
             + "name=\"SignalEvent_" + str(count) + "\" " \
@@ -518,7 +520,7 @@ def PrintFooter():
         + "xmi:id=\"_cD-CwF6WEd-1BtN3LP_f7A\" name=\"UndefinedType\"/>"
     print "</uml:Model>"
 
-def generate(odl_data, used_classes, directory):
+def generate(odl_data, used_classes, used_events, directory):
     global classes, super_classes, attributes, associations, parameters, \
         states, transitions, basic_types, enum_types
 
@@ -536,7 +538,7 @@ def generate(odl_data, used_classes, directory):
     GetArrayTypes(odl_data)
 
     stderr.write("Writing output\n")
-    GatherSignals(odl_data)
+    GatherSignals(odl_data, used_events)
     GatherTimesAndChanges()
 
     PrintHeader(odl_data)
@@ -588,11 +590,13 @@ def main():
     elif argv[1] == "generate":
         if len(argv) == 4:
             used_classes = FindPackageClasses(argv[3], odl_data)
+            used_events  = FindPackageEvents(argv[3], odl_data)
             stderr.write("Using package " + argv[3] + "\n")
         else:
             used_classes = None
+            used_events  = None
 
-        generate(odl_data, used_classes, source)
+        generate(odl_data, used_classes, used_events, source)
 
     if isinstance(source, ZipFile):
         source.close()

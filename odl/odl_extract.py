@@ -405,11 +405,14 @@ def GetAssociations(odl_data, classes):
 
     return associations_used
 
-def GetEvents(odl_data):
+def GetEvents(odl_data, used_events):
     events = { destroy_event_id : "<<Destroy>>" }
 
     for ident in odl_data:
         if odl_data[ident][0] != "_Art1_Event":
+            continue
+
+        if used_events != None and ident not in used_events:
             continue
 
         events[ident] = GetName(odl_data[ident])
@@ -861,6 +864,20 @@ def FindClassesInPackages(packages, odl_data):
 
     return used_classes
 
+def FindEventsInPackages(packages, odl_data):
+    used_events = []
+
+    for ident in packages:
+        version = GetVersion(odl_data[ident])
+
+        for item in version[2]:
+            if item[0] == "Relationship" \
+                    and item[1] == "_Art1_Package_To_PackageItem" \
+                    and item[2] == "_Art1_Event":
+                used_events.append(item[3])
+
+    return used_events
+
 def FindPackageClasses(path, odl_data):
     path_list = path.replace(' ', '_').replace('-', '_').replace('&', "and") \
         .rsplit('/')
@@ -868,6 +885,14 @@ def FindPackageClasses(path, odl_data):
     packages  = FindAllSubpackages(ident, odl_data)
 
     return FindClassesInPackages(packages, odl_data)
+
+def FindPackageEvents(path, odl_data):
+    path_list = path.replace(' ', '_').replace('-', '_').replace('&', "and") \
+        .rsplit('/')
+    ident     = FindPackage(path_list, odl_data)
+    packages  = FindAllSubpackages(ident, odl_data)
+
+    return FindEventsInPackages(packages, odl_data)
 
 def GetPackageHierarchy(odl_data):
     packages = {}
