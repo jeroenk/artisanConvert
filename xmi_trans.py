@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright (c) 2011, Jeroen Ketema, University of Twente
+# Copyright (c) 2011, 2012, Jeroen Ketema, University of Twente
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
