@@ -1,8 +1,9 @@
 Introduction
 ------------
 
-The Python scripts in this directory can be used to translate Artisan
-exports into XMI readable by Papyrus.
+The Python scripts in this directory can be used to convert Artisan UML
+exports into XMI readable by Papyrus. Currently only state machines are
+converted.
 
 The tool can be invoked in two different ways:
 
@@ -13,7 +14,7 @@ The tool can be invoked in two different ways:
    where Model.zip should be replaced by the zip-file containing the
    export to the translated.
 
-2. To translate the export, invoke the tool with:
+2. To convert the export, invoke the tool with:
 
        ./xmi_trans.py generate Model.zip "Functional requirements"
 
@@ -38,7 +39,7 @@ supported. In addition, the following external libraries are required:
 
       https://github.com/brendonh/pyth/wiki
 
-  Currently only the latest version from the pyth git repository works. The
-  repository is located at:
+  Currently only the latest version from the following clone of the pyth git
+  repository works:
 
-      https://github.com/brendonh/pyth.git
+      https://github.com/jeroenk/pyth.git
