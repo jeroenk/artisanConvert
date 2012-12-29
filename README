@@ -39,7 +39,6 @@ supported. In addition, the following external libraries are required:
 
       https://github.com/brendonh/pyth/wiki
 
-  Currently only the latest version from the following clone of the pyth git
-  repository works:
+  Currently only the latest version from the pyth git repository works:
 
-      https://github.com/jeroenk/pyth.git
+      https://github.com/brendonh/pyth.git
